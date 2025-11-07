@@ -2,11 +2,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-/* =========================
-   Services (must match backend)
-========================= */
+
 const SERVICES = [
   // MEN
   { id: "m1", name: "Men Haircut", category: "men", minutes: 30 },

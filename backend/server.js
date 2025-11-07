@@ -479,7 +479,10 @@ async function start() {
   }
 
   // fire-and-forget mail verify (don't block startup)
-  verifyEmailTransport();
+  transporter.verify()
+    .then(() => console.log("✅ Mail transport ready"))
+    .catch(e => console.warn("⚠️ Mail verify failed (send will still be attempted):", e.code || e.message));
+
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server listening on 0.0.0.0:${PORT}`);
