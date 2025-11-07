@@ -1,4 +1,4 @@
-// server.js (ESM, from scratch)
+// server.js (ESM, Render-ready)
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,9 +7,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { randomUUID } from "node:crypto";
 
-import Booking from "./Booking.js"; // <- your model file in backend root
-
-
+import Booking from "./Booking.js"; // your Mongoose model
 
 dotenv.config();
 
@@ -17,14 +15,28 @@ dotenv.config();
    Config
 ======================= */
 const app = express();
-const PORT = process.env.PORT || 4000;
-const ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const PORT = Number(process.env.PORT) || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
+
+// CORS: allow multiple origins via comma-separated env
+// e.g. CLIENT_ORIGIN="https://front.onrender.com,http://localhost:5173"
+const ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
 
 /* =======================
    Middleware
 ======================= */
-app.use(cors({ origin: ORIGIN, credentials: true }));
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // allow curl/postman
+      cb(null, ORIGINS.includes(origin));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 /* =======================
@@ -76,27 +88,37 @@ const {
   STUDIO_ADDRESS = "",
 } = process.env;
 
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: Number(SMTP_PORT),
-  secure: false, // STARTTLS on 587
-  auth: { user: SMTP_USER, pass: SMTP_PASS },
-});
+const transporter = (SMTP_USER && SMTP_PASS)
+  ? nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: Number(SMTP_PORT),
+      secure: Number(SMTP_PORT) === 465, // 587 STARTTLS, 465 SSL
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      requireTLS: Number(SMTP_PORT) === 587,
+      pool: true,
+      connectionTimeout: 10000,
+    })
+  : null;
 
+// Fire-and-forget verify (do NOT block startup)
 async function verifyEmailTransport() {
   console.log("[MAIL]", {
-    host: SMTP_HOST, port: SMTP_PORT, user: SMTP_USER,
+    host: SMTP_HOST, port: String(SMTP_PORT), user: SMTP_USER,
     from: EMAIL_FROM || SMTP_USER, passSet: !!SMTP_PASS
   });
+  if (!transporter) {
+    console.warn("⚠️ SMTP not configured; email disabled.");
+    return;
+  }
   try {
     await transporter.verify();
     console.log("✅ Mail transport verified");
   } catch (e) {
-    console.error("❌ Mail transport verify failed:", e);
+    console.warn("⚠️ Mail transport verify failed (will still attempt on send):", e.code || e.message);
   }
 }
-
-async function sendBookingConfirmation(b) {
+function sendBookingConfirmation(b) {
+  if (!transporter) return Promise.resolve({ ok: false, skipped: true });
   const subject = `${SITE_NAME} — Booking confirmed for ${b.date} at ${b.time}`;
   const html = `
     <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;">
@@ -108,7 +130,7 @@ async function sendBookingConfirmation(b) {
         <tr><td style="padding:8px;border:1px solid #eee;background:#fafafa">Time</td><td style="padding:8px;border:1px solid #eee">${b.time}${b.endTime ? "–" + b.endTime : ""}</td></tr>
       </table>
       <p style="margin:12px 0">Need to make a change? Reply to this email or call <b>${STUDIO_PHONE}</b>.</p>
-      <p style="margin:0;color:#555;font-size:12px">${STUDIO_ADDRESS}${SITE_URL ? " • <a href='"+SITE_URL+"'>"+SITE_URL+"</a>" : ""}</p>
+      <p style="margin:0;color:#555;font-size:12px">${STUDIO_ADDRESS}${SITE_URL ? " • <a href='${SITE_URL}'>${SITE_URL}</a>" : ""}</p>
     </div>
   `;
   const text = `${SITE_NAME} — Booking Confirmed
@@ -120,7 +142,7 @@ Need changes? Reply to this email or call ${STUDIO_PHONE}.
 ${STUDIO_ADDRESS}${SITE_URL ? " • " + SITE_URL : ""}`;
 
   return transporter.sendMail({
-    from: EMAIL_FROM || SMTP_USER, // must match Gmail mailbox
+    from: EMAIL_FROM || SMTP_USER, // Gmail mailbox
     to: b.email,
     replyTo: SMTP_USER,
     subject,
@@ -140,7 +162,7 @@ let SpecialRule = null;  // model set after DB connect
 /* =======================
    Health
 ======================= */
-app.get("/healthz", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
 /* =======================
    Auth (admin)
@@ -173,7 +195,6 @@ function requireAdmin(req, res, next) {
 /* =======================
    Availability API
 ======================= */
-// GET /api/availability?date=YYYY-MM-DD&serviceId=ID
 app.get("/api/availability", async (req, res) => {
   try {
     const { date, serviceId } = req.query;
@@ -311,7 +332,6 @@ app.post("/api/bookings", async (req, res) => {
 /* =======================
    Admin: Bookings list
 ======================= */
-// GET /api/admin/bookings?from=YYYY-MM-DD
 app.get("/api/admin/bookings", requireAdmin, async (req, res) => {
   try {
     const { from } = req.query;
@@ -350,11 +370,12 @@ app.put("/api/admin/hours", requireAdmin, (req, res) => {
 /* =======================
    Admin: Special Rules (DB-backed with memory fallback)
 ======================= */
-// list
+let SpecialRuleModelReady = false;
+
 app.get("/api/admin/rules", requireAdmin, async (req, res) => {
   try {
     const from = req.query.from;
-    if (useDb() && SpecialRule) {
+    if (useDb() && SpecialRuleModelReady) {
       const q = from ? { date: { $gte: from } } : {};
       const rules = await SpecialRule.find(q).sort({ date: 1 }).lean();
       return res.json(rules);
@@ -370,7 +391,6 @@ app.get("/api/admin/rules", requireAdmin, async (req, res) => {
   }
 });
 
-// create
 app.post("/api/admin/rules", requireAdmin, async (req, res) => {
   try {
     const { date, kind, open, close, blocks = [], note = "" } = req.body || {};
@@ -379,7 +399,7 @@ app.post("/api/admin/rules", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "kind must be closed|hours|blocks" });
     }
 
-    if (useDb() && SpecialRule) {
+    if (useDb() && SpecialRuleModelReady) {
       const rule = await SpecialRule.create({ date, kind, open, close, blocks, note });
       return res.json(rule);
     } else {
@@ -393,11 +413,10 @@ app.post("/api/admin/rules", requireAdmin, async (req, res) => {
   }
 });
 
-// delete
 app.delete("/api/admin/rules/:id", requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    if (useDb() && SpecialRule) {
+    if (useDb() && SpecialRuleModelReady) {
       await SpecialRule.findByIdAndDelete(id);
       return res.json({ ok: true });
     } else {
@@ -416,6 +435,7 @@ app.delete("/api/admin/rules/:id", requireAdmin, async (req, res) => {
 ======================= */
 app.post("/api/_test/email", async (req, res) => {
   try {
+    if (!transporter) return res.status(400).json({ ok: false, error: "Mailer not configured" });
     const to = (req.body && req.body.to) || SMTP_USER;
     const info = await transporter.sendMail({
       from: EMAIL_FROM || SMTP_USER,
@@ -436,7 +456,7 @@ app.post("/api/_test/email", async (req, res) => {
 async function start() {
   try {
     if (process.env.MONGO_URI) {
-      await mongoose.connect(process.env.MONGO_URI);
+      await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
       console.log("✅ MongoDB connected");
 
       // define SpecialRule model after DB up
@@ -450,6 +470,7 @@ async function start() {
         note:  { type: String, default: "" },
       }, { timestamps: true });
       SpecialRule = mongoose.models.SpecialRule || mongoose.model("SpecialRule", specialRuleSchema);
+      SpecialRuleModelReady = true;
     } else {
       console.log("ℹ️ No MONGO_URI set — running with in-memory storage");
     }
@@ -457,8 +478,11 @@ async function start() {
     console.error("⚠️ Mongo connect error (continuing without DB):", e.message);
   }
 
-  await verifyEmailTransport(); // log if Gmail login is OK
+  // fire-and-forget mail verify (don't block startup)
+  verifyEmailTransport();
 
-  app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server listening on 0.0.0.0:${PORT}`);
+  });
 }
 start();
