@@ -1,4 +1,4 @@
-// server.js (ESM, Render-ready)
+// server.js (ESM)
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,19 +7,19 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { randomUUID } from "node:crypto";
 
-import Booking from "./Booking.js"; // your Mongoose model
+import Booking from "./Booking.js"; // Mongoose model (email is optional in the schema!)
 
 dotenv.config();
 
 /* =======================
-   Config
+   Basic config
 ======================= */
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
-// CORS: allow multiple origins via comma-separated env
-// e.g. CLIENT_ORIGIN="https://front.onrender.com,http://localhost:5173"
+// Allow multiple client origins via comma-separated env
+// e.g. CLIENT_ORIGIN="http://localhost:5173,https://your-frontend.onrender.com"
 const ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .split(",")
   .map(s => s.trim())
@@ -31,8 +31,8 @@ const ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) return cb(null, true); // allow curl/postman
-      cb(null, ORIGINS.includes(origin));
+      if (!origin) return cb(null, true);          // curl / Postman
+      return cb(null, ORIGINS.includes(origin));   // strict allow-list
     },
     credentials: true,
   })
@@ -43,7 +43,7 @@ app.use(express.json());
    Time helpers
 ======================= */
 const pad = (n) => n.toString().padStart(2, "0");
-const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const toMin = (hhmm) => { const [h, m] = (hhmm || "00:00").split(":").map(Number); return h * 60 + m; };
 const fromMin = (mins) => `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
 const addMinutes = (hhmm, mins) => fromMin(toMin(hhmm) + mins);
 const overlap = (aStart, aEnd, bStart, bEnd) => toMin(aStart) < toMin(bEnd) && toMin(bStart) < toMin(aEnd);
@@ -57,12 +57,12 @@ let HOURS = {
 };
 function getHoursForDate(yyyyMmDd) {
   const d = new Date(yyyyMmDd + "T00:00:00");
-  const day = d.getDay(); // 0=Sun, 6=Sat
+  const day = d.getDay(); // 0 Sun .. 6 Sat
   return (day === 0 || day === 6) ? HOURS.weekend : HOURS.weekday;
 }
 
 /* =======================
-   Service durations (minutes)
+   Service durations
 ======================= */
 const DURATION_BY_ID = {
   // WOMEN
@@ -74,7 +74,7 @@ const DURATION_BY_ID = {
 };
 
 /* =======================
-   Mailer (Gmail via App Password)
+   Mailer (Gmail via App Password or any SMTP)
 ======================= */
 const {
   SMTP_HOST = "smtp.gmail.com",
@@ -92,7 +92,7 @@ const transporter = (SMTP_USER && SMTP_PASS)
   ? nodemailer.createTransport({
       host: SMTP_HOST,
       port: Number(SMTP_PORT),
-      secure: Number(SMTP_PORT) === 465, // 587 STARTTLS, 465 SSL
+      secure: Number(SMTP_PORT) === 465, // 465 SSL; 587 STARTTLS
       auth: { user: SMTP_USER, pass: SMTP_PASS },
       requireTLS: Number(SMTP_PORT) === 587,
       pool: true,
@@ -100,11 +100,11 @@ const transporter = (SMTP_USER && SMTP_PASS)
     })
   : null;
 
-// Fire-and-forget verify (do NOT block startup)
 async function verifyEmailTransport() {
   console.log("[MAIL]", {
-    host: SMTP_HOST, port: String(SMTP_PORT), user: SMTP_USER,
-    from: EMAIL_FROM || SMTP_USER, passSet: !!SMTP_PASS
+    host: SMTP_HOST, port: String(SMTP_PORT),
+    user: SMTP_USER, from: EMAIL_FROM || SMTP_USER,
+    passSet: !!SMTP_PASS,
   });
   if (!transporter) {
     console.warn("⚠️ SMTP not configured; email disabled.");
@@ -117,8 +117,10 @@ async function verifyEmailTransport() {
     console.warn("⚠️ Mail transport verify failed (will still attempt on send):", e.code || e.message);
   }
 }
+
 function sendBookingConfirmation(b) {
-  if (!transporter) return Promise.resolve({ ok: false, skipped: true });
+  if (!transporter || !b.email) return Promise.resolve({ ok: false, skipped: true });
+
   const subject = `${SITE_NAME} — Booking confirmed for ${b.date} at ${b.time}`;
   const html = `
     <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;">
@@ -142,30 +144,51 @@ Need changes? Reply to this email or call ${STUDIO_PHONE}.
 ${STUDIO_ADDRESS}${SITE_URL ? " • " + SITE_URL : ""}`;
 
   return transporter.sendMail({
-    from: EMAIL_FROM || SMTP_USER, // Gmail mailbox
+    from: EMAIL_FROM || SMTP_USER,
     to: b.email,
     replyTo: SMTP_USER,
-    subject,
-    html,
-    text,
+    subject, html, text,
   });
 }
 
 /* =======================
-   Dev stores & DB toggles
+   Storage + models
 ======================= */
 const useDb = () => mongoose.connection.readyState === 1;
-const DEV_BOOKINGS = []; // in-memory fallback
-const DEV_RULES = [];    // in-memory special rules
-let SpecialRule = null;  // model set after DB connect
+const DEV_BOOKINGS = []; // memory fallback
+const DEV_RULES = [];    // memory fallback for special rules
+let SpecialRule = null;  // defined after DB connects
+let SpecialRuleModelReady = false;
 
 /* =======================
-   Health
+   Health / Debug
 ======================= */
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
+// List routes to prove what’s registered
+app.get("/api/_debug/routes", (req, res) => {
+  const routes = [];
+  (app._router?.stack || []).forEach((m) => {
+    if (m.route) {
+      const methods = Object.keys(m.route.methods).join(",").toUpperCase();
+      routes.push(`${methods} ${m.route.path}`);
+    }
+  });
+  res.json({ routes });
+});
+
+// Env + connection hints
+app.get("/api/_debug/whoami", (req, res) => {
+  res.json({
+    port: PORT,
+    mongoConnected: useDb(),
+    hasAdminPassword: Boolean((process.env.ADMIN_PASSWORD || "").trim()),
+    origins: ORIGINS,
+  });
+});
+
 /* =======================
-   Auth (admin)
+   Auth (admin password only)
 ======================= */
 app.post("/api/auth/login", (req, res) => {
   const bodyPwd = (req.body?.password ?? "").trim();
@@ -193,7 +216,7 @@ function requireAdmin(req, res, next) {
 }
 
 /* =======================
-   Availability API
+   Availability
 ======================= */
 app.get("/api/availability", async (req, res) => {
   try {
@@ -208,7 +231,7 @@ app.get("/api/availability", async (req, res) => {
 
     // rules
     let rules = [];
-    if (useDb() && SpecialRule) {
+    if (useDb() && SpecialRuleModelReady) {
       rules = await SpecialRule.find({ date }).lean();
     } else {
       rules = DEV_RULES.filter(r => r.date === date);
@@ -239,7 +262,7 @@ app.get("/api/availability", async (req, res) => {
       if (!busy) candidates.push([start, end]);
     }
 
-    // blocks
+    // block ranges (optional)
     const blockRule = rules.find(r => r.kind === "blocks");
     const final = blockRule?.blocks?.length
       ? candidates.filter(([s,e]) => !blockRule.blocks.some(({ start, end }) => overlap(s, e, start, end)))
@@ -253,12 +276,12 @@ app.get("/api/availability", async (req, res) => {
 });
 
 /* =======================
-   Public: Create Booking  (sends email)
+   Public: Create Booking (email REQUIRED)
 ======================= */
 app.post("/api/bookings", async (req, res) => {
   try {
     const {
-      name, phone, email,
+      name, phone, email,                // email required publicly
       serviceId, serviceName, serviceCategory,
       date, time,
     } = req.body || {};
@@ -272,10 +295,10 @@ app.post("/api/bookings", async (req, res) => {
 
     const endTime = addMinutes(time, durationMinutes);
 
-    // hours & rules check
+    // rules/hours checks
     let { open, close } = getHoursForDate(date);
     let rules = [];
-    if (useDb() && SpecialRule) rules = await SpecialRule.find({ date }).lean();
+    if (useDb() && SpecialRuleModelReady) rules = await SpecialRule.find({ date }).lean();
     else rules = DEV_RULES.filter(r => r.date === date);
 
     if (rules.some(r => r.kind === "closed")) {
@@ -291,7 +314,7 @@ app.post("/api/bookings", async (req, res) => {
       return res.status(400).json({ error: "Selected time is not available (blocked)." });
     }
 
-    // conflicts
+    // conflict check
     let sameDay = [];
     if (useDb()) sameDay = await Booking.find({ date }).lean();
     else sameDay = DEV_BOOKINGS.filter(b => b.date === date);
@@ -317,7 +340,7 @@ app.post("/api/bookings", async (req, res) => {
       DEV_BOOKINGS.push(booking);
     }
 
-    // send email (non-blocking)
+    // email (fire-and-forget)
     sendBookingConfirmation(booking)
       .then(info => console.log("✉️ Email sent:", info?.messageId))
       .catch(err => console.error("❌ Email send failed:", err));
@@ -330,7 +353,64 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 /* =======================
-   Admin: Bookings list
+   ADMIN: Create Booking (email OPTIONAL)
+======================= */
+app.post("/api/admin/bookings", requireAdmin, async (req, res) => {
+  try {
+    const {
+      name, phone, email = "",
+      serviceId, serviceName, serviceCategory,
+      date, time,
+    } = req.body || {};
+
+    const required = ["name","phone","serviceId","serviceName","serviceCategory","date","time"];
+    const missing = required.filter(k => !req.body?.[k]);
+    if (missing.length) return res.status(400).json({ error: `Missing: ${missing.join(", ")}` });
+
+    const durationMinutes = DURATION_BY_ID[serviceId];
+    if (!durationMinutes) return res.status(400).json({ error: "Invalid serviceId" });
+    const endTime = addMinutes(time, durationMinutes);
+
+    // conflict (kept simple—admin can override hours if you want)
+    const sameDay = useDb()
+      ? await Booking.find({ date }).lean()
+      : DEV_BOOKINGS.filter(b => b.date === date);
+
+    const conflict = sameDay.some(b => {
+      const bDur = DURATION_BY_ID[b.serviceId] || b.durationMinutes || 30;
+      const bEnd = b.endTime || addMinutes(b.time, bDur);
+      return overlap(time, endTime, b.time, bEnd);
+    });
+    if (conflict) return res.status(409).json({ error: "Time slot no longer available." });
+
+    // build doc (only set email if present)
+    const doc = {
+      name, phone,
+      serviceId, serviceName, serviceCategory,
+      date, time, durationMinutes, endTime,
+      status: "confirmed",
+    };
+    if (email) doc.email = email;
+
+    let booking;
+    if (useDb()) booking = await Booking.create(doc);
+    else { booking = { _id: randomUUID(), ...doc }; DEV_BOOKINGS.push(booking); }
+
+    if (email) {
+      sendBookingConfirmation(booking).catch(e => console.error("email failed:", e));
+    } else {
+      console.log("📞 Admin phone booking — no email sent");
+    }
+
+    return res.status(201).json({ success: true, booking });
+  } catch (err) {
+    console.error("Admin booking error:", err);
+    return res.status(500).json({ error: "Booking failed." });
+  }
+});
+
+/* =======================
+   ADMIN: List bookings
 ======================= */
 app.get("/api/admin/bookings", requireAdmin, async (req, res) => {
   try {
@@ -352,7 +432,7 @@ app.get("/api/admin/bookings", requireAdmin, async (req, res) => {
 });
 
 /* =======================
-   Admin: Hours
+   ADMIN: Hours (in-memory)
 ======================= */
 app.get("/api/admin/hours", requireAdmin, (_req, res) => res.json(HOURS));
 
@@ -368,10 +448,8 @@ app.put("/api/admin/hours", requireAdmin, (req, res) => {
 });
 
 /* =======================
-   Admin: Special Rules (DB-backed with memory fallback)
+   ADMIN: Special Rules (DB-backed with memory fallback)
 ======================= */
-let SpecialRuleModelReady = false;
-
 app.get("/api/admin/rules", requireAdmin, async (req, res) => {
   try {
     const from = req.query.from;
@@ -431,7 +509,7 @@ app.delete("/api/admin/rules/:id", requireAdmin, async (req, res) => {
 });
 
 /* =======================
-   TEMP: SMTP test endpoint
+   TEMP: SMTP test
 ======================= */
 app.post("/api/_test/email", async (req, res) => {
   try {
@@ -451,6 +529,14 @@ app.post("/api/_test/email", async (req, res) => {
 });
 
 /* =======================
+   404 handler LAST
+======================= */
+app.use((req, res) => {
+  console.warn(`[404] ${req.method} ${req.url}`);
+  res.status(404).json({ error: "Not found" });
+});
+
+/* =======================
    Start
 ======================= */
 async function start() {
@@ -459,7 +545,7 @@ async function start() {
       await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
       console.log("✅ MongoDB connected");
 
-      // define SpecialRule model after DB up
+      // Define SpecialRule model after DB up
       const blockSchema  = new mongoose.Schema({ start: String, end: String }, { _id: false });
       const specialRuleSchema = new mongoose.Schema({
         date:  { type: String, required: true }, // "YYYY-MM-DD"
@@ -469,6 +555,7 @@ async function start() {
         blocks:{ type: [blockSchema], default: [] },
         note:  { type: String, default: "" },
       }, { timestamps: true });
+
       SpecialRule = mongoose.models.SpecialRule || mongoose.model("SpecialRule", specialRuleSchema);
       SpecialRuleModelReady = true;
     } else {
@@ -478,11 +565,8 @@ async function start() {
     console.error("⚠️ Mongo connect error (continuing without DB):", e.message);
   }
 
-  // fire-and-forget mail verify (don't block startup)
-  transporter.verify()
-    .then(() => console.log("✅ Mail transport ready"))
-    .catch(e => console.warn("⚠️ Mail verify failed (send will still be attempted):", e.code || e.message));
-
+  // Verify mailer non-blocking
+  await verifyEmailTransport().catch(() => {});
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server listening on 0.0.0.0:${PORT}`);

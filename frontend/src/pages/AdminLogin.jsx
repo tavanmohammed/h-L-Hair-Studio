@@ -1,47 +1,56 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function AdminLogin() {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const handleLogin = async (e) => {
+  // If already logged in, go to admin
+  useEffect(() => {
+    if (localStorage.getItem("admintoken")) navigate("/admin", { replace: true });
+  }, [navigate]);
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
+    setMsg("");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/login", {
+      const res = await fetch(`${API}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
-
+      if (!res.ok) throw new Error("Invalid password");
+      const data = await res.json(); // { token: "..." }
       localStorage.setItem("admintoken", data.token);
-      navigate("/admin");
+
+      // go back to where they wanted, else /admin
+      const to = location.state?.from?.pathname || "/admin";
+      navigate(to, { replace: true });
     } catch (err) {
-      setError(err.message);
+      setMsg(err.message || "Login failed");
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleLogin} className="bg-white p-8 shadow-xl rounded-xl w-96">
-        <h1 className="text-2xl font-bold text-center mb-6">Admin Login</h1>
+    <div className="max-w-md mx-auto py-16">
+      <h1 className="text-2xl font-semibold mb-6">Admin Login</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="password"
-          placeholder="Enter admin password"
-          className="border p-2 w-full rounded mb-4"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
+          placeholder="Admin password"
+          className="w-full border rounded p-3"
+          autoComplete="current-password"
           required
         />
-        {error && <p className="text-red-600 text-sm mb-2 text-center">{error}</p>}
-        <button type="submit" className="bg-black text-white w-full py-2 rounded">
-          Login
-        </button>
+        <button className="w-full rounded bg-black text-white py-3">Sign in</button>
       </form>
+      {msg && <p className="text-red-600 mt-3">{msg}</p>}
     </div>
   );
 }
