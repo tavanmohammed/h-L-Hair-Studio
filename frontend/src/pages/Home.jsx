@@ -297,8 +297,6 @@ export default function Home() {
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-8">
         <Reviews />
       </section>
-
-      <Footer />
     </main>
   );
 }
