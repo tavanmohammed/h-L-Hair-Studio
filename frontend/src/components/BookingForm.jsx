@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { servicesData } from "../data/servicesData.js"; // adjust the path if needed
+import { servicesData } from "../data/servicesData.js";
 
 /* ---------------------------
    Time + Date helpers
@@ -12,11 +12,11 @@ function addMinutes(hhmm, mins) {
   const t = h * 60 + m + mins;
   return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
 }
-// ✅ Local-date pretty printer to avoid the “one day ago” bug
+// Local-date pretty printer
 function prettyLocalDate(ymd, locale = undefined) {
   if (!ymd) return "";
   const [y, m, d] = ymd.split("-").map(Number);
-  const dt = new Date(y, m - 1, d); // local date (no UTC shift)
+  const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString(locale, {
     weekday: "long",
     month: "long",
@@ -24,7 +24,6 @@ function prettyLocalDate(ymd, locale = undefined) {
     year: "numeric",
   });
 }
-// today as YYYY-MM-DD (local)
 function todayYMD() {
   const now = new Date();
   const y = now.getFullYear();
@@ -32,6 +31,15 @@ function todayYMD() {
   const d = pad(now.getDate());
   return `${y}-${m}-${d}`;
 }
+
+/* ===========================
+   API base (Render backend)
+   - Set VITE_API_URL in frontend .env
+   - Fallback = your Render URL
+=========================== */
+const API =
+  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.replace(/\/$/, "")) ||
+  "https://handlhair-studio.onrender.com";
 
 export default function BookingForm() {
   const [form, setForm] = useState({
@@ -68,7 +76,6 @@ export default function BookingForm() {
       }
     }
     if (!selected) {
-      // reset if empty selection
       setForm((f) => ({
         ...f,
         serviceId: "",
@@ -83,7 +90,7 @@ export default function BookingForm() {
       serviceId: selected.id,
       serviceName: selected.name,
       serviceCategory: category,
-      time: "", // clear previously selected time
+      time: "",
     }));
   };
 
@@ -102,9 +109,11 @@ export default function BookingForm() {
       setDuration(0);
       try {
         setLoading(true);
-        const res = await fetch(
-          `http://localhost:4000/api/availability?date=${form.date}&serviceId=${form.serviceId}`
-        );
+        const params = new URLSearchParams({
+          date: form.date,
+          serviceId: form.serviceId,
+        });
+        const res = await fetch(`${API}/api/availability?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
         setSlots(data.slots || []);
@@ -141,7 +150,7 @@ export default function BookingForm() {
     e.preventDefault();
     if (!form.time || !form.date || !form.serviceId) return;
     try {
-      const res = await fetch("http://localhost:4000/api/bookings", {
+      const res = await fetch(`${API}/api/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -149,9 +158,7 @@ export default function BookingForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Booking failed");
 
-      // ✅ Use local-date pretty printer
       const prettyDate = prettyLocalDate(form.date);
-
       setSuccessMsg(
         `✅ Your appointment for ${form.serviceName} is booked successfully on ${prettyDate} at ${form.time}.`
       );
@@ -256,10 +263,11 @@ export default function BookingForm() {
           type="date"
           name="date"
           value={form.date}
-          min={todayYMD()}            // prevent picking past days
+          min={todayYMD()}
           onChange={onChange}
           required
         />
+        {/* prevent picking past days */}
 
         {availError && <p className="text-red-600 text-sm">{availError}</p>}
         {loading && <p className="text-gray-500 text-sm">Loading times...</p>}

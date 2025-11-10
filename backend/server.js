@@ -1,4 +1,7 @@
-// server.js (ESM)
+// server.js (ESM, single-file, production-ready)
+// Run with: node server.js
+// Make sure package.json has: { "type": "module", "scripts": { "start": "node server.js" } }
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,7 +10,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { randomUUID } from "node:crypto";
 
-import Booking from "./Booking.js"; // Mongoose model (email is optional in the schema!)
+import Booking from "./Booking.js"; // Your Mongoose Booking model
 
 dotenv.config();
 
@@ -26,13 +29,13 @@ const ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .filter(Boolean);
 
 /* =======================
-   Middleware
+   Global middleware
 ======================= */
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) return cb(null, true);          // curl / Postman
-      return cb(null, ORIGINS.includes(origin));   // strict allow-list
+      if (!origin) return cb(null, true);      // curl/Postman
+      return cb(null, ORIGINS.includes(origin));
     },
     credentials: true,
   })
@@ -40,13 +43,30 @@ app.use(
 app.use(express.json());
 
 /* =======================
-   Time helpers
+   Helpers
 ======================= */
 const pad = (n) => n.toString().padStart(2, "0");
 const toMin = (hhmm) => { const [h, m] = (hhmm || "00:00").split(":").map(Number); return h * 60 + m; };
 const fromMin = (mins) => `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
 const addMinutes = (hhmm, mins) => fromMin(toMin(hhmm) + mins);
 const overlap = (aStart, aEnd, bStart, bEnd) => toMin(aStart) < toMin(bEnd) && toMin(bStart) < toMin(aEnd);
+
+/* =======================
+   Simple auth middleware (admin)
+======================= */
+function requireAdmin(req, res, next) {
+  const h = req.headers.authorization || "";
+  const token = h.startsWith("Bearer ") ? h.slice(7) : null;
+  if (!token) return res.status(401).json({ error: "Auth required" });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+    req.user = payload;
+    next();
+  } catch {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+}
 
 /* =======================
    Store hours (in-memory defaults)
@@ -161,12 +181,15 @@ let SpecialRule = null;  // defined after DB connects
 let SpecialRuleModelReady = false;
 
 /* =======================
-   Health / Debug
+   Root + Health + Debug
 ======================= */
+app.get("/", (_req, res) => {
+  res.type("text").send("H&L Hair Studio API is running. See /health.");
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-// List routes to prove what’s registered
-app.get("/api/_debug/routes", (req, res) => {
+app.get("/api/_debug/routes", (_req, res) => {
   const routes = [];
   (app._router?.stack || []).forEach((m) => {
     if (m.route) {
@@ -177,8 +200,7 @@ app.get("/api/_debug/routes", (req, res) => {
   res.json({ routes });
 });
 
-// Env + connection hints
-app.get("/api/_debug/whoami", (req, res) => {
+app.get("/api/_debug/whoami", (_req, res) => {
   res.json({
     port: PORT,
     mongoConnected: useDb(),
@@ -188,7 +210,8 @@ app.get("/api/_debug/whoami", (req, res) => {
 });
 
 /* =======================
-   Auth (admin password only)
+   Auth (password → JWT)
+   Frontend posts { password } to /api/auth/login
 ======================= */
 app.post("/api/auth/login", (req, res) => {
   const bodyPwd = (req.body?.password ?? "").trim();
@@ -201,22 +224,22 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ token });
 });
 
-function requireAdmin(req, res, next) {
-  const h = req.headers.authorization || "";
-  const token = h.startsWith("Bearer ") ? h.slice(7) : null;
-  if (!token) return res.status(401).json({ error: "Auth required" });
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.role !== "admin") return res.status(403).json({ error: "Forbidden" });
-    req.user = payload;
-    next();
-  } catch {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-}
+/* =======================
+   Admin auth probe (protected)
+   Frontend calls GET /api/admin/me to validate token
+======================= */
+app.get("/api/admin/me", requireAdmin, (req, res) => {
+  res.json({
+    ok: true,
+    user: {
+      role: req.user.role,
+    },
+    time: new Date().toISOString(),
+  });
+});
 
 /* =======================
-   Availability
+   Availability (public)
 ======================= */
 app.get("/api/availability", async (req, res) => {
   try {
@@ -371,7 +394,7 @@ app.post("/api/admin/bookings", requireAdmin, async (req, res) => {
     if (!durationMinutes) return res.status(400).json({ error: "Invalid serviceId" });
     const endTime = addMinutes(time, durationMinutes);
 
-    // conflict (kept simple—admin can override hours if you want)
+    // conflict (simple — admin can override hours if you want)
     const sameDay = useDb()
       ? await Booking.find({ date }).lean()
       : DEV_BOOKINGS.filter(b => b.date === date);
@@ -383,7 +406,6 @@ app.post("/api/admin/bookings", requireAdmin, async (req, res) => {
     });
     if (conflict) return res.status(409).json({ error: "Time slot no longer available." });
 
-    // build doc (only set email if present)
     const doc = {
       name, phone,
       serviceId, serviceName, serviceCategory,
@@ -572,4 +594,5 @@ async function start() {
     console.log(`🚀 Server listening on 0.0.0.0:${PORT}`);
   });
 }
+
 start();
