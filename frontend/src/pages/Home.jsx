@@ -134,12 +134,17 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
         {items.map((src, i) => (
           <div key={i} className={`w-full shrink-0 ${aspect} bg-white`}>
             <img
-              src={src}
-              alt={`Style ${i + 1}`}
-              className="w-full h-full object-contain"
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
-            />
+             src={src}
+             alt={`Style ${i + 1}`}
+             className={
+              "w-full h-full object-contain " +
+             (i === 0 ? "rotate-90" : "") +   // first image → left
+             (i === 1 ? "rotate-[270deg]" : "") // second image → right
+               }
+             loading={i === 0 ? "eager" : "lazy"}
+             decoding="async"
+              />
+
           </div>
         ))}
       </div>
