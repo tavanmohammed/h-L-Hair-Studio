@@ -243,7 +243,10 @@ export default function Home() {
                 <img
                   src={c.img}
                   alt={c.label}
-                  className="w-full h-full object-contain"
+                  className={`w-full h-full object-contain ${
+                    idx === 0 ? "rotate-90" : ""
+                  }`}
+          
                   loading="lazy"
                   decoding="async"
                 />
