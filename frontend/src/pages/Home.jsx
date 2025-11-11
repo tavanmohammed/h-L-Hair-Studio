@@ -18,6 +18,7 @@ import work3 from "../assets/work3.png";
 import work4 from "../assets/work4.png";
 import work5 from "../assets/work5.png";
 import work6 from "../assets/work6.png";
+import work7 from "../assets/work7.png";
 
 /* ---------------------- Fade in/out Offer Rotator ---------------------- */
 function OfferRotator({ slides = [], visibleMs = 2200, hiddenMs = 500 }) {
@@ -193,7 +194,7 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
 }
 
 /* ----------------------- WORK IMAGES ----------------------- */
-const workImages = [work2, work3, work4, work5, work6, work1];
+const workImages = [work7, work3, work4, work5, work6, work1];
 
 /* ------------------------------ MAIN PAGE ------------------------------ */
 
@@ -254,7 +255,7 @@ export default function Home() {
                   src={c.img}
                   alt={c.label}
                   className={`w-full h-full object-cover ${
-                    idx === 0 ? "-rotate-180" : ""
+                    idx === 0 ? "rotate" : ""
                   }`}
                   loading="lazy"
                   decoding="async"
@@ -269,11 +270,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* OUR WORK */}
-      <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-6 sm:pb-10">
+     {/* OUR WORK */}
+     <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-6 sm:pb-10">
         <h2 className="text-lg sm:text-2xl font-semibold mb-3">Our Work</h2>
         <Slider items={workImages} aspect="aspect-[4/3]" />
       </section>
+
+
 
       {/* BOOK WITH HESHW */}
       <section className="relative w-full px-4 sm:px-8 md:px-12 mb-6 sm:mb-10">
