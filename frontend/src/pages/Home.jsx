@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 import Reviews from "../components/Reviews";
 import Footer from "../components/Footer";
 
-// Assets (adjust paths if needed)
+// Assets
 import bg from "../assets/background.jpg";
 import heshuBg from "../assets/background-heshu.png";
-import womenHaircut from "../assets/work2.png";   // change to your real women img if different
+import womenHaircut from "../assets/work2.png";
 import menHaircut from "../assets/men.jpg";
 import waxingEyebrows from "../assets/waxing.png";
 import kids from "../assets/kids2.jpg";
@@ -25,10 +25,10 @@ function OfferRotator({ slides = [], visibleMs = 2200, hiddenMs = 500 }) {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    let t1 = setTimeout(() => setShow(false), visibleMs); // fade out
+    let t1 = setTimeout(() => setShow(false), visibleMs);
     let t2 = setTimeout(() => {
       setI((p) => (p + 1) % slides.length);
-      setShow(true); // fade in next
+      setShow(true);
     }, visibleMs + hiddenMs);
 
     return () => {
@@ -41,7 +41,9 @@ function OfferRotator({ slides = [], visibleMs = 2200, hiddenMs = 500 }) {
     <div className="relative w-full flex justify-center">
       <div
         aria-live="polite"
-        className={`transition-opacity duration-300 ${show ? "opacity-100" : "opacity-0"}`}
+        className={`transition-opacity duration-300 ${
+          show ? "opacity-100" : "opacity-0"
+        }`}
       >
         <span className="inline-block rounded-full bg-black/70 text-white px-3 py-1 text-sm sm:text-base">
           {slides[i]}
@@ -62,33 +64,41 @@ function useSwipe({ onSwipe }) {
     startX.current = t.clientX;
     startY.current = t.clientY;
   };
+
   const onTouchMove = (e) => {
     if (startX.current == null) return;
     const t = e.touches[0];
     const dx = t.clientX - startX.current;
     const dy = t.clientY - startY.current;
+
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       onSwipe(dx > 0 ? "right" : "left");
       startX.current = null;
       startY.current = null;
     }
   };
+
   const onMouseDown = (e) => {
     isDown.current = true;
     startX.current = e.clientX;
     startY.current = e.clientY;
   };
+
   const onMouseUp = (e) => {
     if (!isDown.current) return;
     isDown.current = false;
+
     const dx = e.clientX - startX.current;
     const dy = e.clientY - startY.current;
+
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       onSwipe(dx > 0 ? "right" : "left");
     }
+
     startX.current = null;
     startY.current = null;
   };
+
   const onMouseLeave = () => {
     isDown.current = false;
     startX.current = null;
@@ -98,6 +108,7 @@ function useSwipe({ onSwipe }) {
   return { onTouchStart, onTouchMove, onMouseDown, onMouseUp, onMouseLeave };
 }
 
+/* ------------------------------ Slider ------------------------------ */
 function Slider({ items, aspect = "aspect-[4/3]" }) {
   const [idx, setIdx] = useState(0);
   const wrap = (i) => (i + items.length) % items.length;
@@ -106,15 +117,15 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
   const railRef = useRef(null);
 
   useEffect(() => {
-    const el = railRef.current;
-    if (!el) return;
-    el.style.transform = `translateX(-${idx * 100}%)`;
+    if (railRef.current) {
+      railRef.current.style.transform = `translateX(-${idx * 100}%)`;
+    }
   }, [idx]);
 
-  // rotate left (CCW) only work1, rotate right (CW) only work2
+  // Rotate work1 and work2 → left (-90°)
   const rotateClass = (src) => {
-    if (src === work1) return "-rotate-90"; // left
-    if (src === work2) return "rotate-90";  // right
+    if (src === work1) return "-rotate-90";
+    if (src === work2) return "-rotate-90";
     return "";
   };
 
@@ -134,7 +145,6 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
       <div
         ref={railRef}
         className="flex transition-transform duration-300 ease-out"
-        style={{ transform: `translateX(-${idx * 100}%)` }}
       >
         {items.map((src, i) => (
           <div key={i} className={`w-full shrink-0 ${aspect} bg-white`}>
@@ -152,14 +162,14 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
       {/* Arrows */}
       <button
         onClick={() => go("right")}
-        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-3 bg-white/85 backdrop-blur shadow touch-manipulation"
+        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-3 bg-white/85 shadow"
         aria-label="Previous"
       >
         ‹
       </button>
       <button
         onClick={() => go("left")}
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-3 bg-white/85 backdrop-blur shadow touch-manipulation"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-3 bg-white/85 shadow"
         aria-label="Next"
       >
         ›
@@ -172,7 +182,9 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
             key={i}
             onClick={() => setIdx(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-black" : "bg-black/30"}`}
+            className={`h-2.5 w-2.5 rounded-full ${
+              i === idx ? "bg-black" : "bg-black/30"
+            }`}
           />
         ))}
       </div>
@@ -180,9 +192,10 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
   );
 }
 
-/* ----------------------------------- Page ----------------------------------- */
-
+/* ----------------------- WORK IMAGES ----------------------- */
 const workImages = [work1, work2, work3, work4, work5, work6];
+
+/* ------------------------------ MAIN PAGE ------------------------------ */
 
 export default function Home() {
   return (
@@ -198,10 +211,8 @@ export default function Home() {
           />
         </div>
 
-        {/* Readability gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-        {/* Centered text + fading offers */}
         <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-10 sm:pb-16">
           <h1 className="text-white text-3xl sm:text-5xl font-semibold leading-tight drop-shadow-lg">
             Refresh Your Look, <br /> Rediscover Your Confidence
@@ -209,7 +220,10 @@ export default function Home() {
 
           <div className="mt-4">
             <OfferRotator
-              slides={["5% first hair cut", "10% senior haircut every Wednesday"]}
+              slides={[
+                "5% first hair cut",
+                "10% senior haircut every Wednesday",
+              ]}
               visibleMs={2200}
               hiddenMs={500}
             />
@@ -217,9 +231,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* OUR SERVICES */}
+      {/* SERVICES */}
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 py-6 sm:py-8">
-        <h2 className="text-lg sm:text-2xl font-semibold mb-3 sm:mb-4">Our Services</h2>
+        <h2 className="text-lg sm:text-2xl font-semibold mb-3 sm:mb-4">
+          Our Services
+        </h2>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
             { img: womenHaircut, label: "Women" },
@@ -236,11 +253,14 @@ export default function Home() {
                 <img
                   src={c.img}
                   alt={c.label}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover ${
+                    idx === 0 ? "-rotate-180" : ""
+                  }`}
                   loading="lazy"
                   decoding="async"
                 />
               </div>
+
               <div className="p-2 text-center text-sm sm:text-base">
                 <span className="font-medium">{c.label}</span>
               </div>
@@ -251,9 +271,7 @@ export default function Home() {
 
       {/* OUR WORK */}
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-6 sm:pb-10">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-lg sm:text-2xl font-semibold">Our Work</h2>
-        </div>
+        <h2 className="text-lg sm:text-2xl font-semibold mb-3">Our Work</h2>
         <Slider items={workImages} aspect="aspect-[4/3]" />
       </section>
 
@@ -270,12 +288,12 @@ export default function Home() {
             />
           </div>
 
-          {/* Overlay tint */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
 
-          {/* Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <h2 className="text-white text-2xl sm:text-3xl font-semibold drop-shadow">Book with Heshw</h2>
+            <h2 className="text-white text-2xl sm:text-3xl font-semibold drop-shadow">
+              Book with Heshw
+            </h2>
             <p className="mt-2 text-white/90 text-sm sm:text-base max-w-md drop-shadow">
               Precision cuts and styles. Limited slots available this week.
             </p>
@@ -293,9 +311,6 @@ export default function Home() {
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-8">
         <Reviews />
       </section>
-
-      {/* Optional footer */}
-      {/* <Footer /> */}
     </main>
   );
 }
