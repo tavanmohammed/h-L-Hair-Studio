@@ -193,7 +193,7 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
 }
 
 /* ----------------------- WORK IMAGES ----------------------- */
-const workImages = [work1, work2, work3, work4, work5, work6];
+const workImages = [work2, work3, work4, work5, work6, work1];
 
 /* ------------------------------ MAIN PAGE ------------------------------ */
 
