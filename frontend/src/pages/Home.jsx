@@ -20,6 +20,7 @@ import work5 from "../assets/work5.png";
 import work6 from "../assets/work6.png";
 import work7 from "../assets/work7.png";
 
+
 /* ---------------------- Fade in/out Offer Rotator ---------------------- */
 function OfferRotator({ slides = [], visibleMs = 2200, hiddenMs = 500 }) {
   const [i, setI] = useState(0);
@@ -271,10 +272,11 @@ export default function Home() {
       </section>
 
      {/* OUR WORK */}
-     <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-6 sm:pb-10">
-        <h2 className="text-lg sm:text-2xl font-semibold mb-3">Our Work</h2>
-        <Slider items={workImages} aspect="aspect-[4/3]" />
-      </section>
+     {/* OUR WORK */}
+<section className="our-work-section mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-6 sm:pb-10">
+  <h2 className="text-lg sm:text-2xl font-semibold mb-3">Our Work</h2>
+  <Slider items={workImages} aspect="aspect-[4/3]" />
+</section>
 
 
 
