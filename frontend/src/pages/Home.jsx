@@ -8,7 +8,7 @@ import Footer from "../components/Footer";
 // Assets (adjust paths if needed)
 import bg from "../assets/background.jpg";
 import heshuBg from "../assets/background-heshu.png";
-import womenHaircut from "../assets/work2.png";
+import womenHaircut from "../assets/work2.png";   // change to your real women img if different
 import menHaircut from "../assets/men.jpg";
 import waxingEyebrows from "../assets/waxing.png";
 import kids from "../assets/kids2.jpg";
@@ -41,9 +41,7 @@ function OfferRotator({ slides = [], visibleMs = 2200, hiddenMs = 500 }) {
     <div className="relative w-full flex justify-center">
       <div
         aria-live="polite"
-        className={`transition-opacity duration-300 ${
-          show ? "opacity-100" : "opacity-0"
-        }`}
+        className={`transition-opacity duration-300 ${show ? "opacity-100" : "opacity-0"}`}
       >
         <span className="inline-block rounded-full bg-black/70 text-white px-3 py-1 text-sm sm:text-base">
           {slides[i]}
@@ -113,6 +111,13 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
     el.style.transform = `translateX(-${idx * 100}%)`;
   }, [idx]);
 
+  // rotate left (CCW) only work1, rotate right (CW) only work2
+  const rotateClass = (src) => {
+    if (src === work1) return "-rotate-90"; // left
+    if (src === work2) return "rotate-90";  // right
+    return "";
+  };
+
   return (
     <div
       className="relative w-full overflow-hidden rounded-xl bg-neutral-100"
@@ -134,17 +139,12 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
         {items.map((src, i) => (
           <div key={i} className={`w-full shrink-0 ${aspect} bg-white`}>
             <img
-             src={src}
-             alt={`Style ${i + 1}`}
-             className={
-              "w-full h-full object-contain " +
-             (i === 0 ? "rotate-90" : "") +   // first image → left
-             (i === 1 ? "rotate-[270deg]" : "") // second image → right
-               }
-             loading={i === 0 ? "eager" : "lazy"}
-             decoding="async"
-              />
-
+              src={src}
+              alt={`Style ${i + 1}`}
+              className={`w-full h-full object-contain ${rotateClass(src)}`}
+              loading={i === 0 ? "eager" : "lazy"}
+              decoding="async"
+            />
           </div>
         ))}
       </div>
@@ -172,9 +172,7 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
             key={i}
             onClick={() => setIdx(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-2.5 w-2.5 rounded-full ${
-              i === idx ? "bg-black" : "bg-black/30"
-            }`}
+            className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-black" : "bg-black/30"}`}
           />
         ))}
       </div>
@@ -205,16 +203,13 @@ export default function Home() {
 
         {/* Centered text + fading offers */}
         <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-4 pb-10 sm:pb-16">
-        <h1 className="text-white text-3xl sm:text-5xl font-semibold leading-tight drop-shadow-lg">
-            Refresh Your Look, <br /> Rediscover Your Confidence 
+          <h1 className="text-white text-3xl sm:text-5xl font-semibold leading-tight drop-shadow-lg">
+            Refresh Your Look, <br /> Rediscover Your Confidence
           </h1>
 
           <div className="mt-4">
             <OfferRotator
-              slides={[
-                "5% first hair cut",
-                "10% senior haircut every Wednesday",
-              ]}
+              slides={["5% first hair cut", "10% senior haircut every Wednesday"]}
               visibleMs={2200}
               hiddenMs={500}
             />
@@ -224,9 +219,7 @@ export default function Home() {
 
       {/* OUR SERVICES */}
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 py-6 sm:py-8">
-        <h2 className="text-lg sm:text-2xl font-semibold mb-3 sm:mb-4">
-          Our Services
-        </h2>
+        <h2 className="text-lg sm:text-2xl font-semibold mb-3 sm:mb-4">Our Services</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
             { img: womenHaircut, label: "Women" },
@@ -243,10 +236,7 @@ export default function Home() {
                 <img
                   src={c.img}
                   alt={c.label}
-                  className={`w-full h-full object-contain ${
-                    idx === 0 ? "rotate-90" : ""
-                  }`}
-          
+                  className="w-full h-full object-cover"
                   loading="lazy"
                   decoding="async"
                 />
@@ -285,9 +275,7 @@ export default function Home() {
 
           {/* Content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <h2 className="text-white text-2xl sm:text-3xl font-semibold drop-shadow">
-              Book with Heshw
-            </h2>
+            <h2 className="text-white text-2xl sm:text-3xl font-semibold drop-shadow">Book with Heshw</h2>
             <p className="mt-2 text-white/90 text-sm sm:text-base max-w-md drop-shadow">
               Precision cuts and styles. Limited slots available this week.
             </p>
@@ -305,6 +293,9 @@ export default function Home() {
       <section className="mx-auto max-w-screen-xl px-4 sm:px-8 md:px-12 pb-8">
         <Reviews />
       </section>
+
+      {/* Optional footer */}
+      {/* <Footer /> */}
     </main>
   );
 }
