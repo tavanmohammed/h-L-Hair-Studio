@@ -124,8 +124,8 @@ function Slider({ items, aspect = "aspect-[4/3]" }) {
 
   // Rotate work1 and work2 → left (-90°)
   const rotateClass = (src) => {
-    if (src === work1) return "-rotate-90";
-    if (src === work2) return "-rotate-90";
+    if (src === work1) return "-rotate-180";
+    if (src === work2) return "-rotate-180";
     return "";
   };
 
