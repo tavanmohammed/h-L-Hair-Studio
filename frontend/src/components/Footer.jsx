@@ -42,7 +42,7 @@ export default function Footer() {
           <p>Unit #9 4385 Sheppard Ave E<br/>Scarborough, ON M1S 1T8</p>
 
           <h4 className="text-xl font-semibold mt-6 mb-2">Hours</h4>
-          <p>Mon – Fri 10 AM – 6 PM<br/>Sat & Sun 9 AM – 7 PM<br/></p>
+          <p>Mon – Sat 10 AM – 6 PM<br/> Sun 10 AM - 5 PM<br/></p>
 
           <h4 className="text-xl font-semibold mt-6 mb-2">Contact</h4>
           <p>
