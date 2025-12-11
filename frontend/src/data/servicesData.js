@@ -17,19 +17,19 @@ import waxingEyebrows from "../assets/waxing.png";
 
 export const servicesData = {
   women: [
-    { id: "w1", name: "Hair Cut", price: "Starts from $30", img: womenHaircut },
+    { id: "w1", name: "Hair Cut", price: "Starts from $20", img: womenHaircut },
     { id: "w2", name: "Wash & Blow Dry", price: "Starts from $35", img: womenWash },
-    { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "Starts from $65", img: womenBlowdry },
-    { id: "w4", name: "Hair Cut, Wash & Style", price: "Starts from $50", img: womenStyle },
+    { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "Starts from $35", img: womenBlowdry },
+    { id: "w4", name: "Hair Cut, Wash & Style", price: "Starts from $35", img: womenStyle },
     { id: "w5", name: "Bang Trim", price: "$10", img: bangTrim },
-    { id: "w6", name: "Kids Hair Cut", price: "$20", img: kids },
+    { id: "w6", name: "Kids Hair Cut", price: "$18", img: kids },
   ],
   men: [
-    { id: "m1", name: "Hair Cut", price: "Starts from $25", img: menHaircut },
-    { id: "m2", name: "Hair & Fade", price: "Starts from $30", img: menFade },
+    { id: "m1", name: "Hair Cut", price: "Starts from $20", img: menHaircut },
+    { id: "m2", name: "Hair & Fade", price: "Starts from $25", img: menFade },
     { id: "m3", name: "Beard Trim", price: "$10", img: beardTrim },
-    { id: "m4", name: "Kids Hair Cut", price: "$20", img: kids },
-    { id: "m5", name: "Wash & Hair Cut", price: "Starts from $25", img: menWash },
+    { id: "m4", name: "Kids Hair Cut", price: "$18", img: kids },
+    { id: "m5", name: "Wash & Hair Cut", price: "Starts from $35", img: menWash },
   ],
 
   aesthetic: [
