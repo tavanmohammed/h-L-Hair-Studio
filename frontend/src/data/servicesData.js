@@ -10,7 +10,7 @@ import kids3 from "../assets/kids3.jpeg";
 import kids4 from "../assets/kids4.jpeg";
 
 import menHaircut from "../assets/men.jpg";
-import menFade from "../assets/mencut.jpeg";
+import menFade from "../assets/men.jpeg";
 import beardTrim from "../assets/beard.jpg";
 import menWash from "../assets/wash.jpg";
 
