@@ -223,7 +223,7 @@ export default function Home() {
           <div className="mt-4">
             <OfferRotator
               slides={[
-                "5% first hair cut",
+                "Tuesday men & kids Haircut is only $15",
                 "10% senior haircut every Wednesday",
               ]}
               visibleMs={2200}
