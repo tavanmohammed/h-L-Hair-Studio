@@ -30,6 +30,8 @@ export const servicesData = {
     { id: "m3", name: "Beard Trim", price: "$10", img: beardTrim },
     { id: "m4", name: "Kids Hair Cut", price: "$18", img: kids },
     { id: "m5", name: "Wash & Hair Cut", price: "Starts from $35", img: menWash },
+    { id: "m6", name: "Tuesday Hair Cut", price: "$15", img: menHaircut },
+    { id: "m7", name: "Tuesday Kids Hair Cut", price: "$15", img: kids },
   ],
 
   aesthetic: [
