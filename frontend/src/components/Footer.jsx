@@ -12,16 +12,14 @@ export default function Footer() {
 
           <div className="flex items-center gap-4 mt-6">
             {/* Simple icon SVGs */}
-            <a href="#" aria-label="Instagram" className="p-2 rounded-full border hover:bg-black hover:text-white">
+            <a href="#https://www.instagram.com/hl.hairstudio_/" aria-label="Instagram" className="p-2 rounded-full border hover:bg-black hover:text-white">
               {/* Instagram icon */}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5a5.5 5.5 0 1 1 0 11.001A5.5 5.5 0 0 1 12 7.5zm0 2a3.5 3.5 0 1 0 .001 7.001A3.5 3.5 0 0 0 12 9.5zM18 6.2a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
             </a>
-            <a href="#" aria-label="TikTok" className="p-2 rounded-full border hover:bg-black hover:text-white">
+            <a href="#https://www.tiktok.com/@hl_hairstudio" aria-label="TikTok" className="p-2 rounded-full border hover:bg-black hover:text-white">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c1 2 2 3 4 3v3c-2 0-3-.6-4-1.7V15a6 6 0 1 1-6-6h1v3h-1a3 3 0 1 0 3 3V3h3z"/></svg>
             </a>
-            <a href="#" aria-label="YouTube" className="p-2 rounded-full border hover:bg-black hover:text-white">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5v9a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3zM10 9v6l6-3-6-3z"/></svg>
-            </a>
+            
           </div>
         </div>
 
