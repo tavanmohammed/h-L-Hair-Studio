@@ -5,10 +5,12 @@ import womenWash from "../assets/wash.jpg";
 import womenBlowdry from "../assets/blow.jpg";
 import womenStyle from "../assets/styling.jpg";
 import bangTrim from "../assets/cut.jpeg";
-import kids from "../assets/kids.jpg";
+import kids from "../assets/kids.jpeg";
+import kids3 from "../assets/kids3.jpeg";
+import kids4 from "../assets/kids4.jpeg";
 
 import menHaircut from "../assets/men.jpg";
-import menFade from "../assets/mencut.jpg";
+import menFade from "../assets/mencut.jpeg";
 import beardTrim from "../assets/beard.jpg";
 import menWash from "../assets/wash.jpg";
 
@@ -22,7 +24,7 @@ export const servicesData = {
     { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "Starts from $35", img: womenBlowdry },
     { id: "w4", name: "Hair Cut, Wash & Style", price: "Starts from $35", img: womenStyle },
     { id: "w5", name: "Bang Trim", price: "$10", img: bangTrim },
-    { id: "w6", name: "Kids Hair Cut", price: "$18", img: kids },
+    { id: "w6", name: "Kids Hair Cut", price: "$18", img: kids3 },
   ],
   men: [
     { id: "m1", name: "Hair Cut", price: "Starts from $20", img: menHaircut },
@@ -31,7 +33,7 @@ export const servicesData = {
     { id: "m4", name: "Kids Hair Cut", price: "$18", img: kids },
     { id: "m5", name: "Wash & Hair Cut", price: "Starts from $35", img: menWash },
     { id: "m6", name: "Tuesday Hair Cut", price: "$15", img: menHaircut },
-    { id: "m7", name: "Tuesday Kids Hair Cut", price: "$15", img: kids },
+    { id: "m7", name: "Tuesday Kids Hair Cut", price: "$15", img: kids4 },
   ],
 
   aesthetic: [
