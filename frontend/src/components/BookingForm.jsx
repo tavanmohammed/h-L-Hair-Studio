@@ -193,7 +193,7 @@ export default function BookingForm() {
 
       <form className="space-y-5" onSubmit={onSubmit}>
         <p className="text-sm text-gray-600">
-          Hours: Mon–Fri <b>09:00–19:00</b> · Sat–Sun <b>10:00–18:00</b>
+          Hours: Tue–Sat <b>11:00–19:00</b> · Sun <b>11:00–17:00</b>
         </p>
 
         {/* Personal Info */}
