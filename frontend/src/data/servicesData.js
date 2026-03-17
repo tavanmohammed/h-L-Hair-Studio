@@ -1,10 +1,10 @@
 
 
-import womenHaircut from "../assets/cut2.jpg";
+import womenHaircut from "../assets/women-cut.jpeg";
 import womenWash from "../assets/wash.jpg";
 import womenBlowdry from "../assets/blow.jpg";
 import womenStyle from "../assets/styling.jpg";
-import bangTrim from "../assets/cut.jpg";
+import bangTrim from "../assets/cut.jpeg";
 import kids from "../assets/kids.jpg";
 
 import menHaircut from "../assets/men.jpg";
