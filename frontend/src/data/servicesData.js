@@ -30,7 +30,7 @@ export const servicesData = {
     { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "$45 and up", img: womenBlowdry },
     { id: "w4", name: "Hair Cut, Wash & Style", price: "$45 and up", img: womenStyle },
     { id: "w5", name: "Bang Trim", price: "$10", img: bangTrim },
-    { id: "w6", name: "Kids Hair Cut", price: "$18", img: kids3 },
+    { id: "w6", name: "Kids Hair Cut", price: "$15", img: kids3 },
   ],
 
   men: [
