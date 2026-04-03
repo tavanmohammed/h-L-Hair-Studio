@@ -1,19 +1,20 @@
 import React, { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import logo from "../assets/logo.png"; // change file name if needed
 
-/* Inline icons (no external deps) */
 function IconMenu(props) {
   return (
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <line x1="3" y1="6" x2="21" y2="6" />
       <line x1="3" y1="12" x2="21" y2="12" />
       <line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   );
 }
+
 function IconX(props) {
   return (
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -22,8 +23,6 @@ function IconX(props) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const toggleMenu = () => setOpen((v) => !v);
-  const closeMenu = () => setOpen(false);
 
   const navLinks = [
     { path: "/", label: "Home" },
@@ -32,64 +31,91 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur shadow-sm">
-      <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-8 md:px-12">
-        {/* Brand */}
-        <Link to="/" className="text-xl sm:text-2xl font-bold tracking-tight text-black">
-          H&L Hair Studio
-        </Link>
+    <header className="sticky top-0 z-50">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-20 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                <img
+                  src={logo}
+                  alt="H&L Hair Studio Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-        {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-6 text-sm md:text-base">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `transition-colors hover:text-black ${
-                  isActive ? "text-black font-medium" : "text-neutral-600"
-                }`
-              }
+              <div>
+                <h1
+                  className="text-lg sm:text-xl text-gray-900 tracking-[0.2em] uppercase"
+                  style={{ fontFamily: "'Playfair Display', serif" }}
+                >
+                  H&L Hair Studio
+                </h1>
+                <p className="text-[10px] text-gray-500 tracking-[0.3em] uppercase">
+                  Beauty • Hair • Care
+                </p>
+              </div>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-3">
+              {navLinks.map((link) => (
+                <NavLink
+                  key={link.path}
+                  to={link.path}
+                  className={({ isActive }) =>
+                    `px-4 py-2 rounded-full text-sm font-medium transition ${
+                      isActive
+                        ? "bg-gray-100 text-gray-900"
+                        : "text-gray-600 hover:text-black hover:bg-gray-100"
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="hidden md:block">
+              <Link
+                to="/booking"
+                className="px-6 py-2 rounded-full bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition"
+              >
+                Book Now
+              </Link>
+            </div>
+
+            <button
+              onClick={() => setOpen(!open)}
+              className="md:hidden p-2 text-gray-700"
             >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
+              {open ? <IconX /> : <IconMenu />}
+            </button>
+          </div>
+        </div>
 
-        {/* Mobile icon */}
-        <button
-          onClick={toggleMenu}
-          className="sm:hidden p-2 rounded-md text-black focus:outline-none"
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-        >
-          {open ? <IconX /> : <IconMenu />}
-        </button>
-      </div>
-
-      {/* Mobile drawer */}
-      {open && (
-        <div id="mobile-menu" className="sm:hidden bg-white border-t border-neutral-200 shadow-inner">
-          <nav className="flex flex-col items-center py-3 space-y-2 text-base">
+        <div className={`md:hidden transition-all ${open ? "max-h-96" : "max-h-0 overflow-hidden"}`}>
+          <div className="px-4 pb-5 border-t border-gray-200 bg-white">
             {navLinks.map((link) => (
               <NavLink
                 key={link.path}
                 to={link.path}
-                onClick={closeMenu}
-                className={({ isActive }) =>
-                  `block w-full text-center py-2 ${
-                    isActive ? "text-black font-semibold" : "text-neutral-700 hover:text-black"
-                  }`
-                }
+                onClick={() => setOpen(false)}
+                className="block text-center py-3 text-gray-700 hover:text-black"
               >
                 {link.label}
               </NavLink>
             ))}
-          </nav>
+
+            <Link
+              to="/booking"
+              onClick={() => setOpen(false)}
+              className="block mt-3 text-center py-3 bg-gray-900 text-white rounded-xl"
+            >
+              Book Now
+            </Link>
+          </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }

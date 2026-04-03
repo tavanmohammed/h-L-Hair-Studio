@@ -72,13 +72,34 @@ function requireAdmin(req, res, next) {
    Store hours (in-memory defaults)
 ======================= */
 let HOURS = {
-  weekday: { open: "09:00", close: "19:00" },
-  weekend: { open: "10:00", close: "18:00" },
+  regular: {
+    weekday: { open: "11:00", close: "19:00" }, // Tue-Fri
+    saturday: { open: "11:00", close: "19:00" },
+    sunday: { open: "11:00", close: "17:00" },
+  },
+  nails: {
+    weekday: { open: "16:30", close: "19:00" },
+    saturday: { open: "16:30", close: "19:00" },
+    sunday:   { open: "11:00", close: "17:00" },
+  },
 };
-function getHoursForDate(yyyyMmDd) {
+
+function getHoursForDate(yyyyMmDd, bookingType = "regular") {
   const d = new Date(yyyyMmDd + "T00:00:00");
-  const day = d.getDay(); // 0 Sun .. 6 Sat
-  return (day === 0 || day === 6) ? HOURS.weekend : HOURS.weekday;
+  const day = d.getDay(); // 0 Sun ... 6 Sat
+
+  if (bookingType === "nails") {
+    if (day === 1) return null; // Mon closed only
+    if (day === 0) return HOURS.nails.sunday ?? HOURS.nails.saturday; // Sun
+    if (day === 6) return HOURS.nails.saturday;
+    return HOURS.nails.weekday;
+  }
+
+  // regular salon
+  if (day === 1) return null; // Monday closed
+  if (day === 0) return HOURS.regular.sunday; // Sunday
+  if (day === 6) return HOURS.regular.saturday; // Saturday
+  return HOURS.regular.weekday; // Tue-Fri
 }
 
 /* =======================
@@ -86,11 +107,48 @@ function getHoursForDate(yyyyMmDd) {
 ======================= */
 const DURATION_BY_ID = {
   // WOMEN
-  w1: 30, w2: 30, w3: 60, w4: 60, w5: 15, w6: 30,
+  w1: 30,
+  w2: 45,
+  w3: 60,
+  w4: 60,
+  w5: 15,
+  w6: 30,
+
   // MEN
-  m1: 30, m2: 30, m3: 30, m4: 30, m5: 30,
-  // AESTHETIC
-  a1: 15, a2: 15, a3: 15, a4: 15, a5: 15,
+  m1: 30,
+  m2: 45,
+  m3: 15,
+  m4: 30,
+  m5: 45,
+  m6: 30,
+  m7: 30,
+
+  // WAXING
+  wx1: 15,
+  wx2: 15,
+  wx3: 15,
+  wx4: 30,
+  wx5: 45,
+
+  // COLORING
+  c1: 90,
+  c2: 90,
+  c3: 180,
+  c4: 150,
+  c5: 180,
+  c6: 120,
+  c7: 45,
+
+  // NAILS
+  n1: 30,
+  n2: 45,
+  n3: 45,
+  n4: 60,
+  n5: 60,
+  n6: 60,
+  n7: 30,
+  n8: 20,
+  n9: 45,
 };
 
 /* =======================
@@ -243,55 +301,95 @@ app.get("/api/admin/me", requireAdmin, (req, res) => {
 ======================= */
 app.get("/api/availability", async (req, res) => {
   try {
-    const { date, serviceId } = req.query;
-    if (!date || !serviceId) return res.status(400).json({ error: "Missing date or serviceId" });
+    const { date, serviceId, bookingType = "regular" } = req.query;
+
+    if (!date || !serviceId) {
+      return res.status(400).json({ error: "Missing date or serviceId" });
+    }
 
     const duration = DURATION_BY_ID[serviceId];
-    if (!duration) return res.status(400).json({ error: `Unknown serviceId ${serviceId}` });
+    if (!duration) {
+      return res.status(400).json({ error: `Unknown serviceId ${serviceId}` });
+    }
 
-    // base hours
-    let { open, close } = getHoursForDate(date);
+    const dayHours = getHoursForDate(date, bookingType);
+    if (!dayHours) {
+      return res.json({
+        date,
+        serviceId,
+        bookingType,
+        duration,
+        open: "",
+        close: "",
+        slots: [],
+      });
+    }
 
-    // rules
+    let { open, close } = dayHours;
+
     let rules = [];
     if (useDb() && SpecialRuleModelReady) {
       rules = await SpecialRule.find({ date }).lean();
     } else {
-      rules = DEV_RULES.filter(r => r.date === date);
+      rules = DEV_RULES.filter((r) => r.date === date);
     }
 
-    // closed all day?
-    if (rules.some(r => r.kind === "closed")) {
-      return res.json({ date, serviceId, duration, open, close, slots: [] });
+    if (rules.some((r) => r.kind === "closed")) {
+      return res.json({
+        date,
+        serviceId,
+        bookingType,
+        duration,
+        open,
+        close,
+        slots: [],
+      });
     }
 
-    // hours override?
-    const hoursRule = rules.find(r => r.kind === "hours");
+    const hoursRule = rules.find((r) => r.kind === "hours");
     if (hoursRule?.open && hoursRule?.close) {
       open = hoursRule.open;
       close = hoursRule.close;
     }
 
-    // existing bookings
     let bookings = [];
-    if (useDb()) bookings = await Booking.find({ date }).lean();
-    else bookings = DEV_BOOKINGS.filter(b => b.date === date);
+    if (useDb()) {
+      bookings = await Booking.find({ date, bookingType }).lean();
+    } else {
+      bookings = DEV_BOOKINGS.filter((b) => b.date === date && (b.bookingType || "regular") === bookingType);
+    }
 
-    // candidate slots (15-min step)
     const candidates = [];
     for (let t = toMin(open); t + duration <= toMin(close); t += 15) {
-      const start = fromMin(t), end = fromMin(t + duration);
-      const busy = bookings.some(b => overlap(start, end, b.time, b.endTime));
+      const start = fromMin(t);
+      const end = fromMin(t + duration);
+
+      const busy = bookings.some((b) =>
+        overlap(start, end, b.time, b.endTime)
+      );
+
       if (!busy) candidates.push([start, end]);
     }
 
-    // block ranges (optional)
-    const blockRule = rules.find(r => r.kind === "blocks");
+    const blockRule = rules.find((r) => r.kind === "blocks");
     const final = blockRule?.blocks?.length
-      ? candidates.filter(([s,e]) => !blockRule.blocks.some(({ start, end }) => overlap(s, e, start, end)))
+      ? candidates.filter(
+          ([s, e]) =>
+            !blockRule.blocks.some(({ start, end }) =>
+              overlap(s, e, start, end)
+            )
+        )
       : candidates;
 
-    res.json({ date, serviceId, duration, open, close, slots: final.map(([s]) => s) });
+    res.json({
+      date,
+      serviceId,
+      bookingType,
+      duration,
+      open,
+      close,
+      slots: final.map(([s]) => s),
+    });
   } catch (e) {
     console.error("availability error", e);
     res.status(500).json({ error: "Failed to load availability" });
@@ -304,69 +402,116 @@ app.get("/api/availability", async (req, res) => {
 app.post("/api/bookings", async (req, res) => {
   try {
     const {
-      name, phone, email,                // email required publicly
-      serviceId, serviceName, serviceCategory,
-      date, time,
+      name,
+      phone,
+      email,
+      serviceId,
+      serviceName,
+      serviceCategory,
+      date,
+      time,
+      bookingType = "regular",
     } = req.body || {};
 
-    const required = ["name","phone","email","serviceId","serviceName","serviceCategory","date","time"];
-    const missing = required.filter(k => !req.body?.[k]);
-    if (missing.length) return res.status(400).json({ error: `Missing: ${missing.join(", ")}` });
+    const required = [
+      "name",
+      "phone",
+      "email",
+      "serviceId",
+      "serviceName",
+      "serviceCategory",
+      "date",
+      "time",
+    ];
+
+    const missing = required.filter((k) => !req.body?.[k]);
+    if (missing.length) {
+      return res.status(400).json({ error: `Missing: ${missing.join(", ")}` });
+    }
 
     const durationMinutes = DURATION_BY_ID[serviceId];
-    if (!durationMinutes) return res.status(400).json({ error: "Invalid serviceId" });
+    if (!durationMinutes) {
+      return res.status(400).json({ error: "Invalid serviceId" });
+    }
 
     const endTime = addMinutes(time, durationMinutes);
 
-    // rules/hours checks
-    let { open, close } = getHoursForDate(date);
-    let rules = [];
-    if (useDb() && SpecialRuleModelReady) rules = await SpecialRule.find({ date }).lean();
-    else rules = DEV_RULES.filter(r => r.date === date);
-
-    if (rules.some(r => r.kind === "closed")) {
+    const dayHours = getHoursForDate(date, bookingType);
+    if (!dayHours) {
       return res.status(400).json({ error: "Store is closed on this date." });
     }
-    const hoursRule = rules.find(r => r.kind === "hours");
-    if (hoursRule?.open && hoursRule?.close) { open = hoursRule.open; close = hoursRule.close; }
+
+    let { open, close } = dayHours;
+
+    let rules = [];
+    if (useDb() && SpecialRuleModelReady) {
+      rules = await SpecialRule.find({ date }).lean();
+    } else {
+      rules = DEV_RULES.filter((r) => r.date === date);
+    }
+
+    if (rules.some((r) => r.kind === "closed")) {
+      return res.status(400).json({ error: "Store is closed on this date." });
+    }
+
+    const hoursRule = rules.find((r) => r.kind === "hours");
+    if (hoursRule?.open && hoursRule?.close) {
+      open = hoursRule.open;
+      close = hoursRule.close;
+    }
+
     if (!(toMin(time) >= toMin(open) && toMin(endTime) <= toMin(close))) {
       return res.status(400).json({ error: "Selected time is outside store hours." });
     }
-    const blockRule = rules.find(r => r.kind === "blocks");
-    if (blockRule?.blocks?.some(({ start, end }) => overlap(time, endTime, start, end))) {
+
+    const blockRule = rules.find((r) => r.kind === "blocks");
+    if (
+      blockRule?.blocks?.some(({ start, end }) =>
+        overlap(time, endTime, start, end)
+      )
+    ) {
       return res.status(400).json({ error: "Selected time is not available (blocked)." });
     }
 
-    // conflict check
     let sameDay = [];
-    if (useDb()) sameDay = await Booking.find({ date }).lean();
-    else sameDay = DEV_BOOKINGS.filter(b => b.date === date);
-    if (sameDay.some(b => overlap(time, endTime, b.time, b.endTime))) {
+    if (useDb()) {
+      sameDay = await Booking.find({ date, bookingType }).lean();
+    } else {
+      sameDay = DEV_BOOKINGS.filter(
+        (b) => b.date === date && (b.bookingType || "regular") === bookingType
+      );
+    }
+
+    if (sameDay.some((b) => overlap(time, endTime, b.time, b.endTime))) {
       return res.status(409).json({ error: "Time slot no longer available." });
     }
 
-    // save
     let booking;
+    const doc = {
+      name,
+      phone,
+      email,
+      serviceId,
+      serviceName,
+      serviceCategory,
+      bookingType,
+      date,
+      time,
+      durationMinutes,
+      endTime,
+      status: "confirmed",
+    };
+
     if (useDb()) {
-      booking = await Booking.create({
-        name, phone, email,
-        serviceId, serviceName, serviceCategory,
-        date, time, durationMinutes, endTime, status: "confirmed",
-      });
+      booking = await Booking.create(doc);
     } else {
-      booking = {
-        _id: randomUUID(),
-        name, phone, email,
-        serviceId, serviceName, serviceCategory,
-        date, time, durationMinutes, endTime, status: "confirmed",
-      };
+      booking = { _id: randomUUID(), ...doc };
       DEV_BOOKINGS.push(booking);
     }
 
-    // email (fire-and-forget)
     sendBookingConfirmation(booking)
-      .then(info => console.log("✉️ Email sent:", info?.messageId))
-      .catch(err => console.error("❌ Email send failed:", err));
+      .then((info) => console.log("✉️ Email sent:", info?.messageId))
+      .catch((err) => console.error("❌ Email send failed:", err));
 
     res.status(201).json({ success: true, booking });
   } catch (err) {
@@ -381,47 +526,82 @@ app.post("/api/bookings", async (req, res) => {
 app.post("/api/admin/bookings", requireAdmin, async (req, res) => {
   try {
     const {
-      name, phone, email = "",
-      serviceId, serviceName, serviceCategory,
-      date, time,
+      name,
+      phone,
+      email = "",
+      serviceId,
+      serviceName,
+      serviceCategory,
+      date,
+      time,
+      bookingType = "regular",
     } = req.body || {};
 
-    const required = ["name","phone","serviceId","serviceName","serviceCategory","date","time"];
-    const missing = required.filter(k => !req.body?.[k]);
-    if (missing.length) return res.status(400).json({ error: `Missing: ${missing.join(", ")}` });
+    const required = [
+      "name",
+      "phone",
+      "serviceId",
+      "serviceName",
+      "serviceCategory",
+      "date",
+      "time",
+    ];
+
+    const missing = required.filter((k) => !req.body?.[k]);
+    if (missing.length) {
+      return res.status(400).json({ error: `Missing: ${missing.join(", ")}` });
+    }
 
     const durationMinutes = DURATION_BY_ID[serviceId];
-    if (!durationMinutes) return res.status(400).json({ error: "Invalid serviceId" });
+    if (!durationMinutes) {
+      return res.status(400).json({ error: "Invalid serviceId" });
+    }
+
     const endTime = addMinutes(time, durationMinutes);
 
-    // conflict (simple — admin can override hours if you want)
     const sameDay = useDb()
-      ? await Booking.find({ date }).lean()
-      : DEV_BOOKINGS.filter(b => b.date === date);
+      ? await Booking.find({ date, bookingType }).lean()
+      : DEV_BOOKINGS.filter(
+          (b) => b.date === date && (b.bookingType || "regular") === bookingType
+        );
 
-    const conflict = sameDay.some(b => {
-      const bDur = DURATION_BY_ID[b.serviceId] || b.durationMinutes || 30;
-      const bEnd = b.endTime || addMinutes(b.time, bDur);
+    const conflict = sameDay.some((b) => {
+      const bEnd = b.endTime || addMinutes(b.time, b.durationMinutes || 30);
       return overlap(time, endTime, b.time, bEnd);
     });
-    if (conflict) return res.status(409).json({ error: "Time slot no longer available." });
+
+    if (conflict) {
+      return res.status(409).json({ error: "Time slot no longer available." });
+    }
 
     const doc = {
-      name, phone,
-      serviceId, serviceName, serviceCategory,
-      date, time, durationMinutes, endTime,
+      name,
+      phone,
+      serviceId,
+      serviceName,
+      serviceCategory,
+      bookingType,
+      date,
+      time,
+      durationMinutes,
+      endTime,
       status: "confirmed",
     };
+
     if (email) doc.email = email;
 
     let booking;
-    if (useDb()) booking = await Booking.create(doc);
-    else { booking = { _id: randomUUID(), ...doc }; DEV_BOOKINGS.push(booking); }
+    if (useDb()) {
+      booking = await Booking.create(doc);
+    } else {
+      booking = { _id: randomUUID(), ...doc };
+      DEV_BOOKINGS.push(booking);
+    }
 
     if (email) {
-      sendBookingConfirmation(booking).catch(e => console.error("email failed:", e));
-    } else {
-      console.log("📞 Admin phone booking — no email sent");
+      sendBookingConfirmation(booking).catch((e) =>
+        console.error("email failed:", e)
+      );
     }
 
     return res.status(201).json({ success: true, booking });
@@ -456,16 +636,49 @@ app.get("/api/admin/bookings", requireAdmin, async (req, res) => {
 /* =======================
    ADMIN: Hours (in-memory)
 ======================= */
-app.get("/api/admin/hours", requireAdmin, (_req, res) => res.json(HOURS));
+app.get("/api/admin/hours", requireAdmin, (_req, res) => {
+  res.json(HOURS);
+});
 
 app.put("/api/admin/hours", requireAdmin, (req, res) => {
-  const { weekday, weekend } = req.body || {};
+  const { regular, nails } = req.body || {};
   const valid = (t) => /^\d{2}:\d{2}$/.test(t);
-  if (!weekday || !weekend) return res.status(400).json({ error: "Missing weekday/weekend" });
-  if (![weekday.open, weekday.close, weekend.open, weekend.close].every(valid)) {
+
+  if (!regular || !nails) {
+    return res.status(400).json({ error: "Missing regular or nails hours" });
+  }
+
+  const times = [
+    regular?.weekday?.open,
+    regular?.weekday?.close,
+    regular?.saturday?.open,
+    regular?.saturday?.close,
+    regular?.sunday?.open,
+    regular?.sunday?.close,
+    nails?.weekday?.open,
+    nails?.weekday?.close,
+    nails?.saturday?.open,
+    nails?.saturday?.close,
+    nails?.sunday?.close,
+  ];
+
+  if (!times.every(valid)) {
     return res.status(400).json({ error: "Time format must be HH:mm" });
   }
-  HOURS = { weekday: { ...weekday }, weekend: { ...weekend } };
+
+  HOURS = {
+    regular: {
+      weekday: { ...regular.weekday },
+      saturday: { ...regular.saturday },
+      sunday: { ...regular.sunday },
+    },
+    nails: {
+      weekday: { ...nails.weekday },
+      saturday: { ...nails.saturday },
+      sunday:   { ...nails.sunday }, 
+    },
+  };
+
   res.json({ ok: true, HOURS });
 });
 

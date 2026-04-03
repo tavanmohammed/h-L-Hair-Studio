@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { servicesData } from "../data/servicesData.js";
 
 /* ---------------------------
    Time + Date helpers
@@ -7,12 +6,13 @@ import { servicesData } from "../data/servicesData.js";
 function pad(n) {
   return n.toString().padStart(2, "0");
 }
+
 function addMinutes(hhmm, mins) {
   const [h, m] = hhmm.split(":").map(Number);
   const t = h * 60 + m + mins;
   return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
 }
-// Local-date pretty printer
+
 function prettyLocalDate(ymd, locale = undefined) {
   if (!ymd) return "";
   const [y, m, d] = ymd.split("-").map(Number);
@@ -24,6 +24,7 @@ function prettyLocalDate(ymd, locale = undefined) {
     year: "numeric",
   });
 }
+
 function todayYMD() {
   const now = new Date();
   const y = now.getFullYear();
@@ -32,16 +33,21 @@ function todayYMD() {
   return `${y}-${m}-${d}`;
 }
 
-/* ===========================
-   API base (Render backend)
-   - Set VITE_API_URL in frontend .env
-   - Fallback = your Render URL
-=========================== */
+/* ---------------------------
+   API base
+--------------------------- */
 const API =
-  (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.replace(/\/$/, "")) ||
+  (import.meta.env.VITE_API_URL &&
+    import.meta.env.VITE_API_URL.replace(/\/$/, "")) ||
   "https://handlhair-studio.onrender.com";
 
-export default function BookingForm() {
+export default function BookingForm({
+  title,
+  subtitle,
+  categories,
+  bookingType,
+  hoursLabel,
+}) {
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -51,33 +57,40 @@ export default function BookingForm() {
     serviceCategory: "",
     date: "",
     time: "",
+    bookingType,
   });
 
-  const [slots, setSlots] = useState([]);   // available slots from server
-  const [open, setOpen] = useState("");     // day open time
-  const [close, setClose] = useState("");   // day close time
+  const [slots, setSlots] = useState([]);
+  const [open, setOpen] = useState("");
+  const [close, setClose] = useState("");
   const [duration, setDuration] = useState(0);
   const [availError, setAvailError] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  /* ---------------------------
-     Service change handler
-  --------------------------- */
+  const onChange = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
   const onServiceChange = (serviceId) => {
     let selected = null;
-    let category = "";
-    for (const group of Object.keys(servicesData)) {
-      const found = servicesData[group].find((s) => s.id === serviceId);
+    let selectedCategory = "";
+
+    for (const category of categories) {
+      const found = category.items.find((item) => item.id === serviceId);
       if (found) {
         selected = found;
-        category = group;
+        selectedCategory = category.key;
         break;
       }
     }
+
     if (!selected) {
-      setForm((f) => ({
-        ...f,
+      setForm((prev) => ({
+        ...prev,
         serviceId: "",
         serviceName: "",
         serviceCategory: "",
@@ -85,37 +98,42 @@ export default function BookingForm() {
       }));
       return;
     }
-    setForm((f) => ({
-      ...f,
+
+    setForm((prev) => ({
+      ...prev,
       serviceId: selected.id,
       serviceName: selected.name,
-      serviceCategory: category,
+      serviceCategory: selectedCategory,
       time: "",
     }));
   };
 
-  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-
-  /* ---------------------------
-     Fetch availability slots
-  --------------------------- */
   useEffect(() => {
-    (async () => {
+    const fetchAvailability = async () => {
       if (!form.date || !form.serviceId) return;
+
       setAvailError("");
       setSlots([]);
       setOpen("");
       setClose("");
       setDuration(0);
+
       try {
         setLoading(true);
+
         const params = new URLSearchParams({
           date: form.date,
           serviceId: form.serviceId,
+          bookingType,
         });
+
         const res = await fetch(`${API}/api/availability?${params.toString()}`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+        if (!res.ok) {
+          throw new Error(data?.error || `HTTP ${res.status}`);
+        }
+
         setSlots(data.slots || []);
         setOpen(data.open || "");
         setClose(data.close || "");
@@ -125,44 +143,56 @@ export default function BookingForm() {
       } finally {
         setLoading(false);
       }
-    })();
-  }, [form.date, form.serviceId]);
+    };
 
-  /* ---------------------------
-     Build full timetable grid
-  --------------------------- */
+    fetchAvailability();
+  }, [form.date, form.serviceId, bookingType]);
+
   const allSlots = useMemo(() => {
     if (!open || !close || !duration) return [];
-    const arr = [];
+
+    const result = [];
     for (let t = open; addMinutes(t, duration) <= close; t = addMinutes(t, 15)) {
-      arr.push(t);
+      result.push(t);
     }
-    return arr;
+    return result;
   }, [open, close, duration]);
 
   const availableSet = new Set(slots);
-  const selectTime = (t) => setForm((f) => ({ ...f, time: t }));
 
-  /* ---------------------------
-     Submit booking
-  --------------------------- */
+  const selectTime = (time) => {
+    setForm((prev) => ({
+      ...prev,
+      time,
+    }));
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!form.time || !form.date || !form.serviceId) return;
+
+    if (!form.serviceId || !form.date || !form.time) return;
+
     try {
       const res = await fetch(`${API}/api/bookings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Booking failed");
 
-      const prettyDate = prettyLocalDate(form.date);
-      setSuccessMsg(
-        `✅ Your appointment for ${form.serviceName} is booked successfully on ${prettyDate} at ${form.time}.`
-      );
-      setTimeout(() => setSuccessMsg(""), 120000);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Booking failed");
+      }
+
+      const bookedServiceName = form.serviceName;
+const bookedDate = form.date;
+const bookedTime = form.time;
+const prettyDate = prettyLocalDate(bookedDate);
+
+setSuccessMsg(
+  `Your appointment for ${bookedServiceName} is booked on ${prettyDate} at ${bookedTime}.`
+);
 
       setForm({
         name: "",
@@ -173,33 +203,46 @@ export default function BookingForm() {
         serviceCategory: "",
         date: "",
         time: "",
+        bookingType,
       });
+
       setSlots([]);
+      setOpen("");
+      setClose("");
+      setDuration(0);
+
+      setTimeout(() => {
+        setSuccessMsg("");
+      }, 7000);
     } catch (err) {
       alert("Booking failed: " + err.message);
     }
   };
 
   return (
-    <div className="relative">
-      {/* Success overlay */}
+    <div className="rounded-[28px] border border-gray-200 bg-white p-5 sm:p-7 shadow-sm">
+      <div className="mb-6">
+        <h2 className="text-2xl sm:text-3xl text-gray-900 font-semibold">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="mt-2 text-sm sm:text-base text-gray-600 leading-7">
+            {subtitle}
+          </p>
+        )}
+        <p className="mt-2 text-sm text-gray-500">{hoursLabel}</p>
+      </div>
+
       {successMsg && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-50">
-          <div className="bg-white text-center p-8 rounded-2xl shadow-2xl max-w-lg">
-            <p className="text-2xl font-bold text-green-700">{successMsg}</p>
-          </div>
+        <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          {successMsg}
         </div>
       )}
 
       <form className="space-y-5" onSubmit={onSubmit}>
-        <p className="text-sm text-gray-600">
-          Hours: Tue–Sat <b>11:00–19:00</b> · Sun <b>11:00–17:00</b>
-        </p>
-
-        {/* Personal Info */}
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input
-            className="border p-2 rounded"
+            className="border border-gray-300 p-3 rounded-xl outline-none focus:border-gray-900"
             name="name"
             placeholder="Full Name"
             value={form.name}
@@ -207,7 +250,7 @@ export default function BookingForm() {
             required
           />
           <input
-            className="border p-2 rounded"
+            className="border border-gray-300 p-3 rounded-xl outline-none focus:border-gray-900"
             name="phone"
             placeholder="Phone"
             value={form.phone}
@@ -215,7 +258,7 @@ export default function BookingForm() {
             required
           />
           <input
-            className="border p-2 rounded"
+            className="border border-gray-300 p-3 rounded-xl outline-none focus:border-gray-900"
             type="email"
             name="email"
             placeholder="Email"
@@ -225,41 +268,28 @@ export default function BookingForm() {
           />
         </div>
 
-        {/* Service dropdown */}
         <select
-          className="border p-2 w-full rounded"
+          className="border border-gray-300 p-3 w-full rounded-xl outline-none focus:border-gray-900"
           name="serviceId"
           value={form.serviceId}
           onChange={(e) => onServiceChange(e.target.value)}
           required
         >
           <option value="">Select a Service</option>
-          <optgroup label="Women">
-            {servicesData.women.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} – {s.price}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Men">
-            {servicesData.men.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} – {s.price}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Aesthetic">
-            {servicesData.aesthetic.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} – {s.price}
-              </option>
-            ))}
-          </optgroup>
+
+          {categories.map((group) => (
+            <optgroup key={group.key} label={group.label}>
+              {group.items.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} — {service.price}
+                </option>
+              ))}
+            </optgroup>
+          ))}
         </select>
 
-        {/* Date picker */}
         <input
-          className="border p-2 w-full rounded"
+          className="border border-gray-300 p-3 w-full rounded-xl outline-none focus:border-gray-900"
           type="date"
           name="date"
           value={form.date}
@@ -267,52 +297,58 @@ export default function BookingForm() {
           onChange={onChange}
           required
         />
-        {/* prevent picking past days */}
 
-        {availError && <p className="text-red-600 text-sm">{availError}</p>}
-        {loading && <p className="text-gray-500 text-sm">Loading times...</p>}
+        {availError && <p className="text-sm text-red-600">{availError}</p>}
+        {loading && <p className="text-sm text-gray-500">Loading times...</p>}
 
-        {/* Time grid */}
         {form.date && !loading && duration > 0 && allSlots.length > 0 && (
-          <>
-            <div className="text-sm text-gray-700 mb-2">
+          <div>
+            <div className="mb-3 text-sm text-gray-700">
               Duration: <b>{duration} min</b>
               {open && close ? ` · Open ${open}–${close}` : ""}
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {allSlots.map((t) => {
-                const isAvailable = availableSet.has(t);
-                const isSelected = form.time === t;
-                const base =
-                  "px-2 py-2 rounded border text-sm text-center transition";
-                const cls = isSelected
-                  ? `${base} bg-blue-500 text-white border-blue-700`
-                  : isAvailable
-                  ? `${base} bg-green-100 hover:bg-green-200 border-green-400 cursor-pointer`
-                  : `${base} bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed`;
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {allSlots.map((time) => {
+                const isAvailable = availableSet.has(time);
+                const isSelected = form.time === time;
+
+                let classes =
+                  "px-2 py-2 rounded-xl border text-sm text-center transition";
+
+                if (isSelected) {
+                  classes += " bg-gray-900 text-white border-gray-900";
+                } else if (isAvailable) {
+                  classes +=
+                    " bg-green-50 hover:bg-green-100 border-green-300 cursor-pointer";
+                } else {
+                  classes +=
+                    " bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed";
+                }
+
                 return (
                   <button
-                    key={t}
+                    key={time}
                     type="button"
-                    className={cls}
-                    onClick={() => isAvailable && selectTime(t)}
+                    className={classes}
+                    onClick={() => isAvailable && selectTime(time)}
                     disabled={!isAvailable}
                   >
-                    <div className="font-medium">{t}</div>
+                    <div className="font-medium">{time}</div>
                     <div className="text-[11px] opacity-80">
-                      → {addMinutes(t, duration)}
+                      → {addMinutes(time, duration)}
                     </div>
                   </button>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
 
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
-          disabled={!form.date || !form.time || !form.serviceId}
+          disabled={!form.serviceId || !form.date || !form.time}
+          className="w-full sm:w-auto rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition disabled:opacity-50"
         >
           Book Appointment
         </button>
