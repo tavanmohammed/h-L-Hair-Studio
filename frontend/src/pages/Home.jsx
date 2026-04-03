@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import BookWithHeshu from "../components/BookWithHeshu";
 import Reviews from "../components/Reviews";
 
-import heroImg1 from "../assets/background.jpg";
-import heroImg2 from "../assets/hero.jpg";
+import heroImg1 from "../assets/hero.jpg";
+import heroImg2 from "../assets/background.jpg";
 import heroImg3 from "../assets/about.jpeg";
 
 import aboutImg from "../assets/about.jpeg";
