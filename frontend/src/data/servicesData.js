@@ -64,7 +64,9 @@ export const servicesData = {
     { id: "c5", name: "Balayage", price: "$180 and up", img: coloringImg },
     { id: "c6", name: "Perm Short Hair", price: "$150 and up", img: coloringImg },
     { id: "c7", name: "Deep Conditioning Treatment", price: "$50 and up", img: coloringImg },
-    { id: "c7", name: "Hair cut + Highlight + Root touch up ", price: "15% Discount", img: coloringImg },
+    { id: "c7", name: "Keratin", price: "$190 and up", img: coloringImg },
+    { id: "c8", name: "Hair cut + Highlight + Root touch up ", price: "15% Discount", img: coloringImg },
+    
   ],
 
   // 🔥 FULL NAIL LIST (you requested)
@@ -73,7 +75,7 @@ export const servicesData = {
     { id: "n2", name: "Pedicure Basic", price: "$35 and up", img: nailImg },
     { id: "n3", name: "Gel Manicure (Shellac)", price: "$40 and up", img: nailImg },
     { id: "n4", name: "Gel Pedicure", price: "$50 and up", img: nailImg },
-    { id: "n5", name: "Full Set Acrylic (BioScript)", price: "$30 and up", img: nailImg },
+    { id: "n5", name: "Full Set Acrylic (BioScript)", price: "$50 and up", img: nailImg },
     { id: "n6", name: "Refill", price: "$45 and up", img: nailImg },
     { id: "n7", name: "Nail Art Design", price: "Starting from $10", img: nailImg },
     { id: "n8", name: "Per Nail 3D Design", price: "$15 and up", img: nailImg },
