@@ -44,7 +44,7 @@ export default function Footer() {
 
           <h4 className="text-xl font-semibold mt-6 mb-2">Contact</h4>
           <p>
-            <a href="tel:16478894197" className="underline">4372213737</a>
+            <a href="tel:14372213737" className="underline">4372213737</a>
              <a href="mailto:hl.hairstudio85@gmail.com" className="underline block">
                hl.hairstudio85@gmail.com
     
