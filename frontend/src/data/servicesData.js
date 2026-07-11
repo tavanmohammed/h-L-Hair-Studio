@@ -25,11 +25,11 @@ import nailImg from "../assets/nail.jpg";
 
 export const servicesData = {
   women: [
-    { id: "w1", name: "Hair Cut", price: "$20 and up", img: womenHaircut },
-    { id: "w2", name: "Wash & Blow Dry", price: "$35 and up", img: womenWash },
-    { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "$45 and up", img: womenBlowdry },
-    { id: "w4", name: "Hair Cut, Wash & Style", price: "$45 and up", img: womenStyle },
-    { id: "w5", name: "Bang Trim", price: "$10", img: bangTrim },
+    { id: "w1", name: "Hair Cut", price: "$45 and up", img: womenHaircut },
+    { id: "w2", name: "Wash & Blow Dry", price: "$50 and up", img: womenWash },
+    { id: "w3", name: "Hair Cut, Wash & Blow-Dry", price: "$55 and up", img: womenBlowdry },
+    { id: "w4", name: "Hair Cut, Wash & Style", price: "$55 and up", img: womenStyle },
+    { id: "w5", name: "Bang Trim", price: "$12", img: bangTrim },
     { id: "w6", name: "Kids Hair Cut", price: "$15", img: kids3 },
   ],
 
@@ -39,8 +39,7 @@ export const servicesData = {
     { id: "m3", name: "Beard Trim", price: "$10", img: beardTrim },
     { id: "m4", name: "Kids Hair Cut", price: "$15", img: kids },
     { id: "m5", name: "Wash & Hair Cut", price: "$35 and up", img: menWash },
-    { id: "m6", name: "Tuesday Hair Cut", price: "$15", img: menHaircut },
-    { id: "m7", name: "Tuesday Kids Hair Cut", price: "$10", img: kids4 },
+   
     { id: "m8", name: "Men hair color", price: "$50", img: menHaircut },
     { id: "m9", name: "Men hair color + Hair cut", price: "$65", img: menHaircut },
 
