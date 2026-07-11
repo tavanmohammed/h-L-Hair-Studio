@@ -97,7 +97,7 @@ export default function Home() {
       subtitle: "Modern Beauty Experience",
       title: "Refresh Your Look With Confidence",
       text: "Enjoy polished results, relaxing appointments, and a beauty experience that feels elevated from start to finish.",
-      
+      offer: "Haircut + Wash + Style $55+",
     },
     {
       image: heroImg1,
