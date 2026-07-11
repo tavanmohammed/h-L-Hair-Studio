@@ -97,7 +97,7 @@ export default function Home() {
       subtitle: "Modern Beauty Experience",
       title: "Refresh Your Look With Confidence",
       text: "Enjoy polished results, relaxing appointments, and a beauty experience that feels elevated from start to finish.",
-      offer: "Tuesday Hair Cut from $15",
+      
     },
     {
       image: heroImg1,
@@ -111,7 +111,7 @@ export default function Home() {
       subtitle: "Personalized Care",
       title: "A Look Designed Around You",
       text: "From fresh cuts to premium beauty treatments, every detail is tailored to your style and comfort.",
-      offer: "Wash & Blow Dry from $35",
+      offer: "Wash & Blow Dry from $45",
     },
     
    
