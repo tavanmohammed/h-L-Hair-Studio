@@ -1,654 +1,2549 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { servicesData } from "../data/servicesData";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  servicesData,
+} from "../data/servicesData";
+
+/* =====================================================
+   API
+===================================================== */
 
 const API =
-  (import.meta.env.VITE_API_URL &&
-    import.meta.env.VITE_API_URL.replace(/\/$/, "")) ||
+  (
+    import.meta.env
+      .VITE_API_URL &&
+    import.meta.env.VITE_API_URL.replace(
+      /\/$/,
+      ""
+    )
+  ) ||
   "http://localhost:4000";
 
+/* =====================================================
+   SERVICES
+===================================================== */
+
 const SERVICES = [
-  ...servicesData.women.map(s => ({ id: s.id, name: s.name, category: "women", minutes: 30, bookingType: "regular" })),
-  ...servicesData.men.map(s => ({ id: s.id, name: s.name, category: "men", minutes: 30, bookingType: "regular" })),
-  ...servicesData.waxing.map(s => ({ id: s.id, name: s.name, category: "waxing", minutes: 20, bookingType: "regular" })),
-  ...servicesData.coloring.map(s => ({ id: s.id, name: s.name, category: "coloring", minutes: 90, bookingType: "regular" })),
-  ...servicesData.nails.map(s => ({ id: s.id, name: s.name, category: "nails", minutes: 45, bookingType: "nails" })),
+  ...servicesData.women.map(
+    (service) => ({
+      id: service.id,
+      name: service.name,
+      category: "women",
+      bookingType:
+        "regular",
+    })
+  ),
+
+  ...servicesData.men.map(
+    (service) => ({
+      id: service.id,
+      name: service.name,
+      category: "men",
+      bookingType:
+        "regular",
+    })
+  ),
+
+  ...servicesData.waxing.map(
+    (service) => ({
+      id: service.id,
+      name: service.name,
+      category: "waxing",
+      bookingType:
+        "regular",
+    })
+  ),
+
+  ...servicesData.coloring.map(
+    (service) => ({
+      id: service.id,
+      name: service.name,
+      category: "coloring",
+      bookingType:
+        "regular",
+    })
+  ),
+
+  ...servicesData.nails.map(
+    (service) => ({
+      id: service.id,
+      name: service.name,
+      category: "nails",
+      bookingType:
+        "nails",
+    })
+  ),
 ];
 
-const SERVICE_BY_ID = Object.fromEntries(SERVICES.map((s) => [s.id, s]));
+const SERVICE_BY_ID =
+  Object.fromEntries(
+    SERVICES.map(
+      (service) => [
+        service.id,
+        service,
+      ]
+    )
+  );
 
-const pad2 = (n) => String(n).padStart(2, "0");
-const fmtYMD = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-function todayYMD() { return fmtYMD(new Date()); }
-function addDays(ymd, n) { const d = new Date(ymd + "T00:00:00"); d.setDate(d.getDate() + n); return fmtYMD(d); }
-function startOfWeekYMD(ymd) { const d = new Date(ymd + "T00:00:00"); d.setDate(d.getDate() - d.getDay()); return fmtYMD(d); }
-function weekDays(weekStartYmd) { return Array.from({ length: 7 }, (_, i) => addDays(weekStartYmd, i)); }
-function compareHHMM(a = "", b = "") { return a.localeCompare(b); }
-function monthStartYMD(baseYmd) { const d = new Date(baseYmd + "T00:00:00"); d.setDate(1); return fmtYMD(d); }
-function endOfMonthYMD(baseYmd) { const d = new Date(baseYmd + "T00:00:00"); d.setMonth(d.getMonth() + 1, 0); return fmtYMD(d); }
-function prevMonth(ymd) { const d = new Date(ymd + "T00:00:00"); d.setMonth(d.getMonth() - 1); return fmtYMD(d); }
-function nextMonth(ymd) { const d = new Date(ymd + "T00:00:00"); d.setMonth(d.getMonth() + 1); return fmtYMD(d); }
-function monthGrid(baseYmd) {
-  const start = new Date(baseYmd + "T00:00:00");
-  const month = start.getMonth();
-  start.setDate(1);
-  const gridStart = new Date(start);
-  gridStart.setDate(start.getDate() - start.getDay());
-  return Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(gridStart);
-    d.setDate(gridStart.getDate() + i);
-    return { ymd: fmtYMD(d), inMonth: d.getMonth() === month };
-  });
+/* =====================================================
+   DATE HELPERS
+===================================================== */
+
+const pad2 = (number) =>
+  String(number).padStart(
+    2,
+    "0"
+  );
+
+function fmtYMD(date) {
+  return (
+    `${date.getFullYear()}-` +
+    `${pad2(
+      date.getMonth() + 1
+    )}-` +
+    `${pad2(
+      date.getDate()
+    )}`
+  );
 }
 
-function useAuthFetch() {
-  return async (url, opts = {}) => {
-    const token = localStorage.getItem("admintoken");
-    const r = await fetch(API + url, {
-      ...opts,
-      headers: { "Content-Type": "application/json", ...(opts.headers || {}), Authorization: token ? "Bearer " + token : "" },
-    });
-    let data = {};
-    try { data = await r.json(); } catch {}
-    if (!r.ok) {
-      if (r.status === 401) { localStorage.removeItem("admintoken"); window.location.href = "/admin-login"; }
-      throw new Error(data.error || `HTTP ${r.status}`);
+function todayYMD() {
+  return fmtYMD(
+    new Date()
+  );
+}
+
+function addDays(
+  ymd,
+  amount
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setDate(
+    date.getDate() +
+      amount
+  );
+
+  return fmtYMD(
+    date
+  );
+}
+
+function startOfWeekYMD(
+  ymd
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setDate(
+    date.getDate() -
+      date.getDay()
+  );
+
+  return fmtYMD(
+    date
+  );
+}
+
+function weekDays(
+  weekStart
+) {
+  return Array.from(
+    {
+      length: 7,
+    },
+
+    (_, index) =>
+      addDays(
+        weekStart,
+        index
+      )
+  );
+}
+
+function monthStartYMD(
+  ymd
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setDate(1);
+
+  return fmtYMD(
+    date
+  );
+}
+
+function endOfMonthYMD(
+  ymd
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setMonth(
+    date.getMonth() + 1,
+    0
+  );
+
+  return fmtYMD(
+    date
+  );
+}
+
+function prevMonth(
+  ymd
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setMonth(
+    date.getMonth() - 1
+  );
+
+  return fmtYMD(
+    date
+  );
+}
+
+function nextMonth(
+  ymd
+) {
+  const date = new Date(
+    `${ymd}T00:00:00`
+  );
+
+  date.setMonth(
+    date.getMonth() + 1
+  );
+
+  return fmtYMD(
+    date
+  );
+}
+
+function monthGrid(
+  ymd
+) {
+  const start =
+    new Date(
+      `${ymd}T00:00:00`
+    );
+
+  const month =
+    start.getMonth();
+
+  start.setDate(1);
+
+  const gridStart =
+    new Date(start);
+
+  gridStart.setDate(
+    start.getDate() -
+      start.getDay()
+  );
+
+  return Array.from(
+    {
+      length: 42,
+    },
+
+    (_, index) => {
+      const date =
+        new Date(
+          gridStart
+        );
+
+      date.setDate(
+        gridStart.getDate() +
+          index
+      );
+
+      return {
+        ymd:
+          fmtYMD(date),
+
+        inMonth:
+          date.getMonth() ===
+          month,
+      };
     }
+  );
+}
+
+/* =====================================================
+   AUTH FETCH
+===================================================== */
+
+function useAuthFetch() {
+  return async (
+    url,
+    options = {}
+  ) => {
+    const token =
+      localStorage.getItem(
+        "admintoken"
+      );
+
+    const response =
+      await fetch(
+        API + url,
+        {
+          ...options,
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            ...(
+              options.headers ||
+              {}
+            ),
+
+            Authorization:
+              token
+                ? `Bearer ${token}`
+                : "",
+          },
+        }
+      );
+
+    let data = {};
+
+    try {
+      data =
+        await response.json();
+    } catch {
+      // ignore
+    }
+
+    if (!response.ok) {
+      if (
+        response.status ===
+        401
+      ) {
+        localStorage.removeItem(
+          "admintoken"
+        );
+
+        window.location.href =
+          "/admin-login";
+      }
+
+      throw new Error(
+        data.error ||
+          `HTTP ${response.status}`
+      );
+    }
+
     return data;
   };
 }
 
-function dayRuleSummary(rules, ymd) {
-  const dayRules = rules.filter((r) => r.date === ymd);
+/* =====================================================
+   RULE SUMMARY
+===================================================== */
+
+function dayRuleSummary(
+  rules,
+  date
+) {
+  const dayRules =
+    rules.filter(
+      (rule) =>
+        rule.date === date
+    );
+
   return {
-    isClosed: dayRules.some((r) => r.kind === "closed"),
-    hours: dayRules.find((r) => r.kind === "hours"),
-    blocks: dayRules.find((r) => r.kind === "blocks"),
+    isClosed:
+      dayRules.some(
+        (rule) =>
+          rule.kind ===
+          "closed"
+      ),
+
+    hours:
+      dayRules.find(
+        (rule) =>
+          rule.kind ===
+          "hours"
+      ),
+
+    blocks:
+      dayRules.find(
+        (rule) =>
+          rule.kind ===
+          "blocks"
+      ),
+
     dayRules,
   };
 }
 
+/* =====================================================
+   ADMIN COMPONENT
+===================================================== */
+
 export default function Admin() {
-  const navigate = useNavigate();
-  const authFetch = useAuthFetch();
+  const navigate =
+    useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem("admintoken");
-    if (!token) navigate("/admin-login");
-  }, [navigate]);
+  const authFetch =
+    useAuthFetch();
 
-  const today = useMemo(() => todayYMD(), []);
-  const tomorrow = useMemo(() => addDays(today, 1), [today]);
-  const [selectedDay, setSelectedDay] = useState(today);
-  const [weekStart, setWeekStart] = useState(startOfWeekYMD(today));
-  const [monthAnchor, setMonthAnchor] = useState(monthStartYMD(today));
-  const [showMonth, setShowMonth] = useState(false);
+  const today = useMemo(
+    () => todayYMD(),
+    []
+  );
 
-  const [hours, setHours] = useState({
+  const tomorrow =
+    useMemo(
+      () =>
+        addDays(
+          today,
+          1
+        ),
+      [today]
+    );
+
+  const [
+    selectedDay,
+    setSelectedDay,
+  ] = useState(today);
+
+  const [
+    weekStart,
+    setWeekStart,
+  ] = useState(
+    startOfWeekYMD(today)
+  );
+
+  const [
+    monthAnchor,
+    setMonthAnchor,
+  ] = useState(
+    monthStartYMD(today)
+  );
+
+  const [
+    showMonth,
+    setShowMonth,
+  ] = useState(false);
+
+  const [
+    hours,
+    setHours,
+  ] = useState({
     regular: {
-      weekday:  { open: "11:00", close: "19:00" },
-      saturday: { open: "11:00", close: "19:00" },
-      sunday:   { open: "11:00", close: "17:00" },
+      weekday: {
+        open: "11:00",
+        close: "19:00",
+      },
+
+      saturday: {
+        open: "11:00",
+        close: "19:00",
+      },
+
+      sunday: {
+        open: "11:00",
+        close: "17:00",
+      },
     },
+
     nails: {
-      weekday:  { open: "16:30", close: "19:00" },
-      saturday: { open: "16:30", close: "19:00" },
-      sunday:   { open: "11:00", close: "17:00" },
+      weekday: {
+        open: "16:30",
+        close: "19:00",
+      },
+
+      saturday: {
+        open: "16:30",
+        close: "19:00",
+      },
+
+      sunday: {
+        open: "11:00",
+        close: "17:00",
+      },
     },
   });
-  const [hoursMsg, setHoursMsg] = useState("");
 
-  const [bookings, setBookings] = useState([]);
-  const [rules, setRules] = useState([]);
-  const [loadingBookings, setLoadingBookings] = useState(false);
-  const [bookingsErr, setBookingsErr] = useState("");
-  const [rulesErr, setRulesErr] = useState("");
+  const [
+    hoursMsg,
+    setHoursMsg,
+  ] = useState("");
 
-  const [qName, setQName] = useState("");
-  const [qPhone, setQPhone] = useState("");
-  const [qEmail, setQEmail] = useState("");
-  const [qServiceId, setQServiceId] = useState(SERVICES[0]?.id || "");
-  const [qDate, setQDate] = useState(today);
-  const [qSlots, setQSlots] = useState([]);
-  const [qTime, setQTime] = useState("");
-  const [qMsg, setQMsg] = useState("");
+  const [
+    bookings,
+    setBookings,
+  ] = useState([]);
 
-  const [ruleDate, setRuleDate] = useState(today);
-  const [ruleKind, setRuleKind] = useState("closed");
-  const [ruleOpen, setRuleOpen] = useState("12:00");
-  const [ruleClose, setRuleClose] = useState("16:00");
-  const [ruleBlocks, setRuleBlocks] = useState([{ start: "13:00", end: "14:00" }]);
-  const [ruleMsg, setRuleMsg] = useState("");
+  const [
+    rules,
+    setRules,
+  ] = useState([]);
 
-  const days = weekDays(weekStart);
-  const grid = useMemo(() => monthGrid(monthAnchor), [monthAnchor]);
+  const [
+    loadingBookings,
+    setLoadingBookings,
+  ] = useState(false);
 
-  const thisMonthLabel = useMemo(() => {
-    const d = new Date(monthAnchor + "T00:00:00");
-    return d.toLocaleString(undefined, { month: "long", year: "numeric" });
-  }, [monthAnchor]);
+  const [
+    bookingsErr,
+    setBookingsErr,
+  ] = useState("");
 
-  const bookingsByDate = useMemo(() => {
-    const map = {};
-    for (const b of bookings) (map[b.date] ||= []).push(b);
-    for (const k of Object.keys(map)) map[k].sort((a, b) => compareHHMM(a.time, b.time));
-    return map;
-  }, [bookings]);
+  const [
+    rulesErr,
+    setRulesErr,
+  ] = useState("");
 
-  const todaysList    = bookingsByDate[today] || [];
-  const tomorrowsList = bookingsByDate[tomorrow] || [];
-  const selectedList  = bookingsByDate[selectedDay] || [];
+  /* QUICK BOOKING */
 
-  async function loadHours() {
-    try { const data = await authFetch("/api/admin/hours"); setHours(data); } catch {}
-  }
+  const [
+    qName,
+    setQName,
+  ] = useState("");
 
-  async function loadMonthBookings(anchorYmd) {
-    try {
-      setLoadingBookings(true); setBookingsErr("");
-      const from = monthStartYMD(anchorYmd);
-      const rows = await authFetch(`/api/admin/bookings?from=${from}`);
-      const end = endOfMonthYMD(anchorYmd);
-      setBookings(rows.filter((b) => b.date >= from && b.date <= end));
-    } catch (e) { setBookingsErr(e.message); setBookings([]); }
-    finally { setLoadingBookings(false); }
-  }
+  const [
+    qPhone,
+    setQPhone,
+  ] = useState("");
 
-  async function loadMonthRules(anchorYmd) {
-    try {
-      setRulesErr("");
-      const from = monthStartYMD(anchorYmd);
-      const rows = await authFetch(`/api/admin/rules?from=${from}`);
-      const end = endOfMonthYMD(anchorYmd);
-      setRules(rows.filter((r) => r.date >= from && r.date <= end));
-    } catch (e) { setRulesErr(e.message); setRules([]); }
-  }
+  const [
+    qEmail,
+    setQEmail,
+  ] = useState("");
 
-  useEffect(() => { loadHours(); }, []);
-  useEffect(() => { loadMonthBookings(monthAnchor); }, [monthAnchor]);
-  useEffect(() => { loadMonthRules(monthAnchor); }, [monthAnchor]);
+  const [
+    qServiceId,
+    setQServiceId,
+  ] = useState(
+    SERVICES[0]?.id || ""
+  );
+
+  const [
+    qDate,
+    setQDate,
+  ] = useState(today);
+
+  const [
+    qSlots,
+    setQSlots,
+  ] = useState([]);
+
+  const [
+    qTime,
+    setQTime,
+  ] = useState("");
+
+  const [
+    qMsg,
+    setQMsg,
+  ] = useState("");
+
+  /* RULES */
+
+  const [
+    ruleDate,
+    setRuleDate,
+  ] = useState(today);
+
+  const [
+    ruleKind,
+    setRuleKind,
+  ] = useState(
+    "closed"
+  );
+
+  const [
+    ruleOpen,
+    setRuleOpen,
+  ] = useState(
+    "12:00"
+  );
+
+  const [
+    ruleClose,
+    setRuleClose,
+  ] = useState(
+    "16:00"
+  );
+
+  const [
+    ruleBlocks,
+    setRuleBlocks,
+  ] = useState([
+    {
+      start: "13:00",
+      end: "14:00",
+    },
+  ]);
+
+  const [
+    ruleMsg,
+    setRuleMsg,
+  ] = useState("");
+
+  /* =====================================================
+     AUTH CHECK
+  ===================================================== */
 
   useEffect(() => {
-    (async () => {
-      setQSlots([]); setQTime("");
-      try {
-        const svc = SERVICE_BY_ID[qServiceId];
-        const bookingType = svc?.bookingType || "regular";
-        const r = await fetch(`${API}/api/availability?date=${qDate}&serviceId=${qServiceId}&bookingType=${bookingType}`);
-        const data = await r.json();
-        if (r.ok) setQSlots(data.slots || []);
-      } catch {}
-    })();
-  }, [qDate, qServiceId]);
+    const token =
+      localStorage.getItem(
+        "admintoken"
+      );
+
+    if (!token) {
+      navigate(
+        "/admin-login"
+      );
+    }
+  }, [navigate]);
+
+  /* =====================================================
+     DERIVED DATA
+  ===================================================== */
+
+  const days =
+    weekDays(
+      weekStart
+    );
+
+  const grid = useMemo(
+    () =>
+      monthGrid(
+        monthAnchor
+      ),
+    [monthAnchor]
+  );
+
+  const monthLabel =
+    useMemo(() => {
+      const date =
+        new Date(
+          `${monthAnchor}T00:00:00`
+        );
+
+      return date.toLocaleString(
+        undefined,
+        {
+          month: "long",
+          year: "numeric",
+        }
+      );
+    }, [monthAnchor]);
+
+  const bookingsByDate =
+    useMemo(() => {
+      const map = {};
+
+      for (
+        const booking of
+        bookings
+      ) {
+        (
+          map[
+            booking.date
+          ] ||= []
+        ).push(
+          booking
+        );
+      }
+
+      for (
+        const date of
+        Object.keys(map)
+      ) {
+        map[date].sort(
+          (a, b) =>
+            (
+              a.time || ""
+            ).localeCompare(
+              b.time || ""
+            )
+        );
+      }
+
+      return map;
+    }, [bookings]);
+
+  const todaysList =
+    bookingsByDate[
+      today
+    ] || [];
+
+  const tomorrowsList =
+    bookingsByDate[
+      tomorrow
+    ] || [];
+
+  const selectedList =
+    bookingsByDate[
+      selectedDay
+    ] || [];
+
+  /* =====================================================
+     LOAD DATA
+  ===================================================== */
+
+  async function loadHours() {
+    try {
+      const data =
+        await authFetch(
+          "/api/admin/hours"
+        );
+
+      setHours(data);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function loadMonthBookings(
+    anchor
+  ) {
+    try {
+      setLoadingBookings(
+        true
+      );
+
+      setBookingsErr("");
+
+      const from =
+        monthStartYMD(
+          anchor
+        );
+
+      const end =
+        endOfMonthYMD(
+          anchor
+        );
+
+      const rows =
+        await authFetch(
+          `/api/admin/bookings?from=${from}`
+        );
+
+      setBookings(
+        rows.filter(
+          (booking) =>
+            booking.date >=
+              from &&
+            booking.date <=
+              end
+        )
+      );
+    } catch (error) {
+      setBookingsErr(
+        error.message
+      );
+
+      setBookings([]);
+    } finally {
+      setLoadingBookings(
+        false
+      );
+    }
+  }
+
+  async function loadMonthRules(
+    anchor
+  ) {
+    try {
+      setRulesErr("");
+
+      const from =
+        monthStartYMD(
+          anchor
+        );
+
+      const end =
+        endOfMonthYMD(
+          anchor
+        );
+
+      const rows =
+        await authFetch(
+          `/api/admin/rules?from=${from}`
+        );
+
+      setRules(
+        rows.filter(
+          (rule) =>
+            rule.date >=
+              from &&
+            rule.date <=
+              end
+        )
+      );
+    } catch (error) {
+      setRulesErr(
+        error.message
+      );
+
+      setRules([]);
+    }
+  }
+
+  async function loadAvailability() {
+    setQSlots([]);
+
+    setQTime("");
+
+    try {
+      const service =
+        SERVICE_BY_ID[
+          qServiceId
+        ];
+
+      if (!service) {
+        return;
+      }
+
+      const bookingType =
+        service.bookingType ||
+        "regular";
+
+      const response =
+        await fetch(
+          `${API}/api/availability?date=${qDate}&serviceId=${qServiceId}&bookingType=${bookingType}`
+        );
+
+      const data =
+        await response.json();
+
+      if (response.ok) {
+        setQSlots(
+          data.slots || []
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    loadHours();
+  }, []);
+
+  useEffect(() => {
+    loadMonthBookings(
+      monthAnchor
+    );
+  }, [monthAnchor]);
+
+  useEffect(() => {
+    loadMonthRules(
+      monthAnchor
+    );
+  }, [monthAnchor]);
+
+  useEffect(() => {
+    loadAvailability();
+  }, [
+    qDate,
+    qServiceId,
+  ]);
+
+  /* =====================================================
+     HOURS
+  ===================================================== */
 
   async function saveHours() {
     try {
       setHoursMsg("");
-      await authFetch("/api/admin/hours", { method: "PUT", body: JSON.stringify(hours) });
-      setHoursMsg("Saved ✔");
-      setTimeout(() => setHoursMsg(""), 1500);
-    } catch (e) { setHoursMsg(e.message); }
+
+      await authFetch(
+        "/api/admin/hours",
+        {
+          method: "PUT",
+
+          body:
+            JSON.stringify(
+              hours
+            ),
+        }
+      );
+
+      setHoursMsg(
+        "Saved ✔"
+      );
+
+      setTimeout(
+        () =>
+          setHoursMsg(
+            ""
+          ),
+        1500
+      );
+    } catch (error) {
+      setHoursMsg(
+        error.message
+      );
+    }
   }
+
+  /* =====================================================
+     CREATE BOOKING
+  ===================================================== */
 
   async function createBooking() {
     try {
       setQMsg("");
-      if (!qName || !qPhone || !qServiceId || !qDate || !qTime) {
-        setQMsg("Please fill name, phone, service, date, and time."); return;
+
+      if (
+        !qName ||
+        !qPhone ||
+        !qServiceId ||
+        !qDate ||
+        !qTime
+      ) {
+        setQMsg(
+          "Please fill name, phone, service, date and time."
+        );
+
+        return;
       }
-      const svc = SERVICE_BY_ID[qServiceId];
+
+      const service =
+        SERVICE_BY_ID[
+          qServiceId
+        ];
+
       const body = {
-        name: qName, phone: qPhone, serviceId: qServiceId,
-        serviceName: svc?.name || "", serviceCategory: svc?.category || "",
-        bookingType: svc?.bookingType || "regular", date: qDate, time: qTime,
+        name:
+          qName,
+
+        phone:
+          qPhone,
+
+        serviceId:
+          qServiceId,
+
+        serviceName:
+          service?.name ||
+          "",
+
+        serviceCategory:
+          service?.category ||
+          "",
+
+        bookingType:
+          service?.bookingType ||
+          "regular",
+
+        date:
+          qDate,
+
+        time:
+          qTime,
       };
-      if (qEmail) body.email = qEmail;
-      await authFetch("/api/admin/bookings", { method: "POST", body: JSON.stringify(body) });
-      setQMsg("Booked ✔");
-      await loadMonthBookings(monthAnchor);
-      setQName(""); setQPhone(""); setQEmail(""); setQTime("");
-    } catch (e) { setQMsg(e.message); }
+
+      if (qEmail) {
+        body.email =
+          qEmail;
+      }
+
+      await authFetch(
+        "/api/admin/bookings",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify(
+              body
+            ),
+        }
+      );
+
+      setQMsg(
+        "Booked ✔"
+      );
+
+      setQName("");
+      setQPhone("");
+      setQEmail("");
+      setQTime("");
+
+      await loadMonthBookings(
+        monthAnchor
+      );
+
+      await loadAvailability();
+    } catch (error) {
+      setQMsg(
+        error.message
+      );
+    }
   }
+
+  /* =====================================================
+     CANCEL BOOKING
+  ===================================================== */
+
+  async function cancelBooking(
+    booking
+  ) {
+    const confirmed =
+      window.confirm(
+        `Cancel ${booking.name}'s appointment on ${booking.date} at ${booking.time}?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await authFetch(
+        `/api/admin/bookings/${booking._id}/cancel`,
+        {
+          method:
+            "PATCH",
+        }
+      );
+
+      await loadMonthBookings(
+        monthAnchor
+      );
+
+      await loadAvailability();
+    } catch (error) {
+      window.alert(
+        error.message ||
+          "Failed to cancel appointment."
+      );
+    }
+  }
+
+  /* =====================================================
+     RULES
+  ===================================================== */
 
   async function addRule() {
     try {
       setRuleMsg("");
-      const body = { date: ruleDate, kind: ruleKind };
-      if (ruleKind === "hours") { body.open = ruleOpen; body.close = ruleClose; }
-      if (ruleKind === "blocks") { body.blocks = ruleBlocks; }
-      const saved = await authFetch("/api/admin/rules", { method: "POST", body: JSON.stringify(body) });
-      setRules((r) => [...r, saved].sort((a, b) => a.date.localeCompare(b.date)));
-      if (qDate === ruleDate) {
-        const svc = SERVICE_BY_ID[qServiceId];
-        const bookingType = svc?.bookingType || "regular";
-        const r = await fetch(`${API}/api/availability?date=${qDate}&serviceId=${qServiceId}&bookingType=${bookingType}`);
-        const data = await r.json();
-        if (r.ok) setQSlots(data.slots || []);
+
+      const body = {
+        date:
+          ruleDate,
+
+        kind:
+          ruleKind,
+      };
+
+      if (
+        ruleKind ===
+        "hours"
+      ) {
+        body.open =
+          ruleOpen;
+
+        body.close =
+          ruleClose;
       }
-      setRuleMsg("Saved ✔");
-      setTimeout(() => setRuleMsg(""), 1500);
-    } catch (e) { setRuleMsg(e.message); }
+
+      if (
+        ruleKind ===
+        "blocks"
+      ) {
+        body.blocks =
+          ruleBlocks;
+      }
+
+      await authFetch(
+        "/api/admin/rules",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify(
+              body
+            ),
+        }
+      );
+
+      await loadMonthRules(
+        monthAnchor
+      );
+
+      await loadAvailability();
+
+      setRuleMsg(
+        "Saved ✔"
+      );
+
+      setTimeout(
+        () =>
+          setRuleMsg(
+            ""
+          ),
+        1500
+      );
+    } catch (error) {
+      setRuleMsg(
+        error.message
+      );
+    }
   }
 
-  async function removeRule(id) {
+  async function removeRule(
+    id
+  ) {
     try {
-      await authFetch(`/api/admin/rules/${id}`, { method: "DELETE" });
-      setRules((r) => r.filter((x) => x._id !== id));
-    } catch {}
+      await authFetch(
+        `/api/admin/rules/${id}`,
+        {
+          method:
+            "DELETE",
+        }
+      );
+
+      await loadMonthRules(
+        monthAnchor
+      );
+
+      await loadAvailability();
+    } catch {
+      // ignore
+    }
   }
 
-  function BookingCards({ rows }) {
-    if (!rows?.length) return <div className="text-sm text-gray-500">No bookings.</div>;
+  /* =====================================================
+     BOOKING CARDS MOBILE
+  ===================================================== */
+
+  function BookingCards({
+    rows,
+  }) {
+    if (!rows?.length) {
+      return (
+        <div className="text-sm text-gray-500">
+          No bookings.
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-3">
-        {rows.map((b) => (
-          <div key={b._id} className="rounded-xl border bg-white p-3 sm:p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <div className="font-medium text-sm sm:text-base">{b.time}–{b.endTime}</div>
-              <div className="flex gap-2 flex-wrap">
-                <div className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-gray-900 text-white">{b.serviceCategory}</div>
-                {b.bookingType === "nails" && (
-                  <div className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">nails</div>
+        {rows.map(
+          (booking) => {
+            const cancelled =
+              booking.status ===
+              "cancelled";
+
+            return (
+              <div
+                key={
+                  booking._id
+                }
+                className={`rounded-xl border bg-white p-3 sm:p-4 shadow-sm ${
+                  cancelled
+                    ? "opacity-60"
+                    : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+
+                  <div>
+                    <div className="font-medium">
+                      {booking.time}
+                      –
+                      {
+                        booking.endTime
+                      }
+                    </div>
+
+                    <div className="font-medium mt-1">
+                      {
+                        booking.name
+                      }
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      {
+                        booking.serviceName
+                      }
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 justify-end">
+
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-gray-900 text-white">
+                      {
+                        booking.serviceCategory
+                      }
+                    </span>
+
+                    {booking.bookingType ===
+                      "nails" && (
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-pink-100 text-pink-700">
+                        nails
+                      </span>
+                    )}
+
+                    {cancelled && (
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-red-100 text-red-700">
+                        Cancelled
+                      </span>
+                    )}
+
+                  </div>
+                </div>
+
+                <div className="mt-2 text-xs text-gray-500">
+                  <div>
+                    {
+                      booking.phone
+                    }
+                  </div>
+
+                  {booking.email && (
+                    <div>
+                      {
+                        booking.email
+                      }
+                    </div>
+                  )}
+                </div>
+
+                {!cancelled && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      cancelBooking(
+                        booking
+                      )
+                    }
+                    className="mt-3 border border-red-600 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+                  >
+                    Cancel Appointment
+                  </button>
                 )}
               </div>
-            </div>
-            <div className="mt-1 text-sm">
-              <div className="font-medium">{b.name}</div>
-              <div className="text-gray-600">{b.serviceName}</div>
-            </div>
-            <div className="mt-1 text-xs text-gray-500 space-y-0.5">
-              <div>{b.phone}</div>
-              {b.email ? <div>{b.email}</div> : null}
-            </div>
-          </div>
-        ))}
+            );
+          }
+        )}
       </div>
     );
   }
 
-  function BookingTable({ rows }) {
-    if (!rows?.length) return <div className="text-sm text-gray-500">No bookings.</div>;
+  /* =====================================================
+     BOOKING TABLE DESKTOP
+  ===================================================== */
+
+  function BookingTable({
+    rows,
+  }) {
+    if (!rows?.length) {
+      return (
+        <div className="text-sm text-gray-500">
+          No bookings.
+        </div>
+      );
+    }
+
     return (
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
+
           <thead>
             <tr className="text-left border-b">
-              <th className="py-2 pr-4">Time</th>
-              <th className="py-2 pr-4">Name</th>
-              <th className="py-2 pr-4">Service</th>
-              <th className="py-2 pr-4">Contact</th>
+
+              <th className="py-2 pr-4">
+                Time
+              </th>
+
+              <th className="py-2 pr-4">
+                Name
+              </th>
+
+              <th className="py-2 pr-4">
+                Service
+              </th>
+
+              <th className="py-2 pr-4">
+                Contact
+              </th>
+
+              <th className="py-2 pr-4">
+                Status
+              </th>
+
+              <th className="py-2">
+                Action
+              </th>
+
             </tr>
           </thead>
+
           <tbody>
-            {rows.map((b) => (
-              <tr key={b._id} className="border-b last:border-0">
-                <td className="py-2 pr-4">{b.time}–{b.endTime}</td>
-                <td className="py-2 pr-4">{b.name}</td>
-                <td className="py-2 pr-4">{b.serviceCategory} / {b.serviceName}{b.bookingType === "nails" ? " / nails" : ""}</td>
-                <td className="py-2 pr-4">
-                  <div>{b.phone}</div>
-                  {b.email ? <div className="text-gray-500">{b.email}</div> : null}
-                </td>
-              </tr>
-            ))}
+            {rows.map(
+              (booking) => {
+                const cancelled =
+                  booking.status ===
+                  "cancelled";
+
+                return (
+                  <tr
+                    key={
+                      booking._id
+                    }
+                    className={`border-b ${
+                      cancelled
+                        ? "opacity-60"
+                        : ""
+                    }`}
+                  >
+
+                    <td className="py-2 pr-4">
+                      {
+                        booking.time
+                      }
+                      –
+                      {
+                        booking.endTime
+                      }
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {
+                        booking.name
+                      }
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      {
+                        booking.serviceCategory
+                      }
+                      {" / "}
+                      {
+                        booking.serviceName
+                      }
+                    </td>
+
+                    <td className="py-2 pr-4">
+                      <div>
+                        {
+                          booking.phone
+                        }
+                      </div>
+
+                      {booking.email && (
+                        <div className="text-gray-500">
+                          {
+                            booking.email
+                          }
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="py-2 pr-4">
+
+                      {cancelled ? (
+                        <span className="font-medium text-red-600">
+                          Cancelled
+                        </span>
+                      ) : (
+                        <span className="font-medium text-green-700">
+                          Confirmed
+                        </span>
+                      )}
+
+                    </td>
+
+                    <td className="py-2">
+
+                      {!cancelled && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            cancelBooking(
+                              booking
+                            )
+                          }
+                          className="border border-red-600 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+
+                    </td>
+
+                  </tr>
+                );
+              }
+            )}
           </tbody>
+
         </table>
       </div>
     );
   }
 
-  function DayChip({ ymd }) {
-    const isSel = ymd === selectedDay;
-    const count = (bookingsByDate[ymd] || []).length;
-    const info = dayRuleSummary(rules, ymd);
+  /* =====================================================
+     DAY CHIP
+  ===================================================== */
+
+  function DayChip({
+    ymd,
+  }) {
+    const selected =
+      ymd === selectedDay;
+
+    const activeBookings =
+      (
+        bookingsByDate[
+          ymd
+        ] || []
+      ).filter(
+        (booking) =>
+          booking.status !==
+          "cancelled"
+      );
+
+    const info =
+      dayRuleSummary(
+        rules,
+        ymd
+      );
+
     return (
       <button
-        onClick={() => { setSelectedDay(ymd); setRuleDate(ymd); }}
-        className={`shrink-0 px-3 py-2 rounded-lg border text-[12px] sm:text-sm mr-2 min-w-[64px] active:scale-[.98] ${isSel ? "bg-black text-white border-black" : "bg-white"}`}
+        onClick={() => {
+          setSelectedDay(
+            ymd
+          );
+
+          setRuleDate(
+            ymd
+          );
+        }}
+        className={`shrink-0 px-3 py-2 rounded-lg border text-xs sm:text-sm mr-2 min-w-[70px] ${
+          selected
+            ? "bg-black text-white border-black"
+            : "bg-white"
+        }`}
       >
+
         <div className="font-medium">
-          {new Date(ymd + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })} {ymd.slice(8, 10)}
+          {new Date(
+            `${ymd}T00:00:00`
+          ).toLocaleDateString(
+            undefined,
+            {
+              weekday:
+                "short",
+            }
+          )}
+          {" "}
+          {ymd.slice(
+            8,
+            10
+          )}
         </div>
-        <div className="text-[11px]">{info.isClosed ? "Closed" : count ? `${count} bookings` : "—"}</div>
+
+        <div className="text-[11px]">
+
+          {info.isClosed
+            ? "Closed"
+            : activeBookings.length
+            ? `${activeBookings.length} bookings`
+            : "—"}
+
+        </div>
+
       </button>
     );
   }
 
-  function DayCell({ cell }) {
-    const count = (bookingsByDate[cell.ymd] || []).length;
-    const info = dayRuleSummary(rules, cell.ymd);
-    const isSel = cell.ymd === selectedDay;
-    const isToday = cell.ymd === today;
+  /* =====================================================
+     MONTH CELL
+  ===================================================== */
+
+  function DayCell({
+    cell,
+  }) {
+    const activeBookings =
+      (
+        bookingsByDate[
+          cell.ymd
+        ] || []
+      ).filter(
+        (booking) =>
+          booking.status !==
+          "cancelled"
+      );
+
+    const info =
+      dayRuleSummary(
+        rules,
+        cell.ymd
+      );
+
+    const selected =
+      cell.ymd ===
+      selectedDay;
+
+    const isToday =
+      cell.ymd === today;
+
     return (
       <button
-        onClick={() => { setSelectedDay(cell.ymd); setRuleDate(cell.ymd); }}
+        onClick={() => {
+          setSelectedDay(
+            cell.ymd
+          );
+
+          setRuleDate(
+            cell.ymd
+          );
+        }}
         className={[
-          "h-14 xs:h-16 sm:h-20 border p-1.5 sm:p-2 text-left relative transition touch-manipulation",
-          cell.inMonth ? "bg-white" : "bg-gray-50 text-gray-400",
-          isSel ? "ring-2 ring-black" : "",
-          info.isClosed ? "opacity-60" : "",
+          "h-16 sm:h-20 border p-2 text-left relative",
+
+          cell.inMonth
+            ? "bg-white"
+            : "bg-gray-50 text-gray-400",
+
+          selected
+            ? "ring-2 ring-black"
+            : "",
+
+          info.isClosed
+            ? "opacity-60"
+            : "",
         ].join(" ")}
       >
-        <div className="text-[11px] sm:text-xs">{cell.ymd.slice(8, 10)}</div>
-        {isToday && <span className="absolute top-1 right-1 text-[10px] px-1 rounded bg-black text-white">today</span>}
-        {info.isClosed && <span className="absolute bottom-1 left-1 text-[10px] px-1 rounded bg-red-600 text-white">closed</span>}
-        {info.hours && !info.isClosed && (
-          <span className="absolute bottom-1 left-1 text-[10px] px-1 rounded bg-amber-600 text-white">
-            {info.hours.open}-{info.hours.close}
+
+        <div className="text-xs">
+          {cell.ymd.slice(
+            8,
+            10
+          )}
+        </div>
+
+        {isToday && (
+          <span className="absolute top-1 right-1 text-[10px] bg-black text-white rounded px-1">
+            today
           </span>
         )}
-        {count > 0 && (
-          <span className="absolute bottom-1 right-1 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-gray-900 text-white">{count}</span>
+
+        {info.isClosed && (
+          <span className="absolute bottom-1 left-1 text-[10px] bg-red-600 text-white rounded px-1">
+            closed
+          </span>
         )}
+
+        {activeBookings.length >
+          0 && (
+          <span className="absolute bottom-1 right-1 text-[10px] bg-gray-900 text-white rounded-full px-2">
+            {
+              activeBookings.length
+            }
+          </span>
+        )}
+
       </button>
     );
   }
 
-  function TimeInput({ label, value, onChange }) {
-    return (
-      <input
-        type="time"
-        className="border rounded-lg p-3 w-32"
-        value={value}
-        onChange={onChange}
-        aria-label={label}
-      />
-    );
-  }
+  /* =====================================================
+     UI
+  ===================================================== */
 
   return (
     <div className="min-h-dvh bg-gray-50">
-      <div className="sticky top-0 z-40 bg-gray-50/90 backdrop-blur border-b" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="max-w-screen-xl mx-auto px-3 sm:px-6 md:px-8">
-          <div className="py-3 sm:py-4 flex items-center gap-2">
-            <h1 className="text-base sm:text-lg md:text-xl font-bold">Admin</h1>
+
+      {/* HEADER */}
+
+      <div className="sticky top-0 z-40 bg-gray-50/90 backdrop-blur border-b">
+
+        <div className="max-w-screen-xl mx-auto px-3 sm:px-6 py-3">
+
+          <div className="flex items-center gap-2">
+
+            <h1 className="font-bold text-xl">
+              Admin
+            </h1>
+
             <div className="ml-auto flex gap-2">
+
               <button
-                onClick={() => { setSelectedDay(today); setWeekStart(startOfWeekYMD(today)); setMonthAnchor(monthStartYMD(today)); }}
-                className="border px-3 py-2 rounded-lg text-sm active:scale-[.98]"
+                onClick={() => {
+                  setSelectedDay(
+                    today
+                  );
+
+                  setWeekStart(
+                    startOfWeekYMD(
+                      today
+                    )
+                  );
+
+                  setMonthAnchor(
+                    monthStartYMD(
+                      today
+                    )
+                  );
+                }}
+                className="border px-3 py-2 rounded-lg"
               >
                 Today
               </button>
+
               <button
-                onClick={() => { loadMonthBookings(monthAnchor); loadMonthRules(monthAnchor); }}
-                className="border px-3 py-2 rounded-lg text-sm active:scale-[.98]"
+                onClick={() => {
+                  loadMonthBookings(
+                    monthAnchor
+                  );
+
+                  loadMonthRules(
+                    monthAnchor
+                  );
+
+                  loadAvailability();
+                }}
+                className="border px-3 py-2 rounded-lg"
               >
                 Refresh
               </button>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-6 space-y-6 sm:space-y-7">
+      <div className="max-w-screen-xl mx-auto px-3 sm:px-6 py-6 space-y-6">
 
-        {/* Today & Tomorrow */}
-        <section className="bg-white rounded-xl shadow">
-          <div className="p-4 sm:p-5 text-base sm:text-lg font-semibold">Today & Tomorrow</div>
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
+        {/* TODAY & TOMORROW */}
+
+        <section className="bg-white rounded-xl shadow p-5">
+
+          <h2 className="font-semibold text-lg mb-4">
+            Today & Tomorrow
+          </h2>
+
+          <div className="space-y-6">
+
             <div>
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">Today ({today})</div>
-              <div className="md:hidden"><BookingCards rows={todaysList} /></div>
-              <div className="hidden md:block"><BookingTable rows={todaysList} /></div>
+
+              <h3 className="text-sm text-gray-600 mb-2">
+                Today ({today})
+              </h3>
+
+              <div className="md:hidden">
+                <BookingCards
+                  rows={
+                    todaysList
+                  }
+                />
+              </div>
+
+              <div className="hidden md:block">
+                <BookingTable
+                  rows={
+                    todaysList
+                  }
+                />
+              </div>
+
             </div>
+
             <div>
-              <div className="text-xs sm:text-sm text-gray-600 mb-1">Tomorrow ({tomorrow})</div>
-              <div className="md:hidden"><BookingCards rows={tomorrowsList} /></div>
-              <div className="hidden md:block"><BookingTable rows={tomorrowsList} /></div>
+
+              <h3 className="text-sm text-gray-600 mb-2">
+                Tomorrow ({tomorrow})
+              </h3>
+
+              <div className="md:hidden">
+                <BookingCards
+                  rows={
+                    tomorrowsList
+                  }
+                />
+              </div>
+
+              <div className="hidden md:block">
+                <BookingTable
+                  rows={
+                    tomorrowsList
+                  }
+                />
+              </div>
+
             </div>
+
           </div>
+
         </section>
 
-        {/* Calendar */}
-        <section className="bg-white rounded-xl shadow">
-          <div className="p-4 sm:p-5 text-base sm:text-lg font-semibold">Calendar & Day Details</div>
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="border px-3 py-2 rounded-lg active:scale-[.98]">‹ Prev</button>
-              <div className="text-sm text-gray-600">
-                {new Date(weekStart + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })}
-                {" – "}
-                {new Date(addDays(weekStart, 6) + "T00:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" })}
-              </div>
-              <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="border px-3 py-2 rounded-lg active:scale-[.98] ml-auto">Next ›</button>
-            </div>
+        {/* CALENDAR */}
 
-            <div className="overflow-x-auto -mx-1 px-1">
-              <div className="flex pb-1">{days.map((d) => <DayChip key={d} ymd={d} />)}</div>
-            </div>
+        <section className="bg-white rounded-xl shadow p-5">
 
-            <button onClick={() => setShowMonth((v) => !v)} className="w-full border px-3 py-2 rounded-lg active:scale-[.98]">
-              {showMonth ? "Hide Full Month" : "Show Full Month"}
+          <h2 className="font-semibold text-lg mb-4">
+            Calendar & Day Details
+          </h2>
+
+          <div className="flex items-center gap-2 mb-4">
+
+            <button
+              onClick={() =>
+                setWeekStart(
+                  addDays(
+                    weekStart,
+                    -7
+                  )
+                )
+              }
+              className="border px-3 py-2 rounded-lg"
+            >
+              ‹ Prev
             </button>
 
-            {showMonth && (
-              <div className="border rounded-lg p-2 sm:p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <button onClick={() => setMonthAnchor(prevMonth(monthAnchor))} className="border px-3 py-2 rounded-lg">‹</button>
-                  <div className="font-medium text-sm sm:text-base">{thisMonthLabel}</div>
-                  <button onClick={() => setMonthAnchor(nextMonth(monthAnchor))} className="border px-3 py-2 rounded-lg">›</button>
-                  <div className="ml-auto text-xs sm:text-sm text-gray-500">
-                    {loadingBookings ? "Loading…" : bookingsErr ? <span className="text-red-600">{bookingsErr}</span> : rulesErr ? <span className="text-red-600">{rulesErr}</span> : null}
-                  </div>
+            <button
+              onClick={() =>
+                setWeekStart(
+                  addDays(
+                    weekStart,
+                    7
+                  )
+                )
+              }
+              className="ml-auto border px-3 py-2 rounded-lg"
+            >
+              Next ›
+            </button>
+
+          </div>
+
+          <div className="overflow-x-auto mb-4">
+
+            <div className="flex">
+              {days.map(
+                (day) => (
+                  <DayChip
+                    key={
+                      day
+                    }
+                    ymd={
+                      day
+                    }
+                  />
+                )
+              )}
+            </div>
+
+          </div>
+
+          <button
+            onClick={() =>
+              setShowMonth(
+                (current) =>
+                  !current
+              )
+            }
+            className="w-full border px-3 py-2 rounded-lg mb-4"
+          >
+            {showMonth
+              ? "Hide Full Month"
+              : "Show Full Month"}
+          </button>
+
+          {showMonth && (
+            <div className="border rounded-lg p-3 mb-5">
+
+              <div className="flex items-center mb-3">
+
+                <button
+                  onClick={() =>
+                    setMonthAnchor(
+                      prevMonth(
+                        monthAnchor
+                      )
+                    )
+                  }
+                  className="border px-3 py-2 rounded-lg"
+                >
+                  ‹
+                </button>
+
+                <div className="font-medium ml-3">
+                  {
+                    monthLabel
+                  }
                 </div>
-                <div className="grid grid-cols-7 text-[10px] sm:text-xs text-gray-600 mb-1 px-1">
-                  {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => <div key={d}>{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-px bg-gray-200 rounded overflow-hidden">
-                  {grid.map((cell) => <DayCell key={cell.ymd} cell={cell} />)}
-                </div>
+
+                <button
+                  onClick={() =>
+                    setMonthAnchor(
+                      nextMonth(
+                        monthAnchor
+                      )
+                    )
+                  }
+                  className="ml-auto border px-3 py-2 rounded-lg"
+                >
+                  ›
+                </button>
+
+              </div>
+
+              {loadingBookings && (
+                <p className="text-sm text-gray-500">
+                  Loading...
+                </p>
+              )}
+
+              {bookingsErr && (
+                <p className="text-sm text-red-600">
+                  {
+                    bookingsErr
+                  }
+                </p>
+              )}
+
+              {rulesErr && (
+                <p className="text-sm text-red-600">
+                  {
+                    rulesErr
+                  }
+                </p>
+              )}
+
+              <div className="grid grid-cols-7 text-xs text-gray-500 mb-1">
+
+                {[
+                  "Sun",
+                  "Mon",
+                  "Tue",
+                  "Wed",
+                  "Thu",
+                  "Fri",
+                  "Sat",
+                ].map(
+                  (day) => (
+                    <div
+                      key={
+                        day
+                      }
+                    >
+                      {
+                        day
+                      }
+                    </div>
+                  )
+                )}
+
+              </div>
+
+              <div className="grid grid-cols-7 gap-px bg-gray-200">
+
+                {grid.map(
+                  (cell) => (
+                    <DayCell
+                      key={
+                        cell.ymd
+                      }
+                      cell={
+                        cell
+                      }
+                    />
+                  )
+                )}
+
+              </div>
+
+            </div>
+          )}
+
+          <h3 className="font-medium mb-3">
+            Bookings on {selectedDay}
+          </h3>
+
+          <div className="md:hidden">
+            <BookingCards
+              rows={
+                selectedList
+              }
+            />
+          </div>
+
+          <div className="hidden md:block">
+            <BookingTable
+              rows={
+                selectedList
+              }
+            />
+          </div>
+
+        </section>
+
+        {/* SPECIAL HOURS */}
+
+        <section className="bg-white rounded-xl shadow p-5">
+
+          <h2 className="font-semibold text-lg mb-4">
+            Special Hours & Closures
+          </h2>
+
+          <div className="grid gap-3 md:grid-cols-3">
+
+            <input
+              type="date"
+              value={
+                ruleDate
+              }
+              onChange={(
+                event
+              ) =>
+                setRuleDate(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            />
+
+            <select
+              value={
+                ruleKind
+              }
+              onChange={(
+                event
+              ) =>
+                setRuleKind(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            >
+              <option value="closed">
+                Closed all day
+              </option>
+
+              <option value="hours">
+                Override hours
+              </option>
+
+              <option value="blocks">
+                Block time
+              </option>
+            </select>
+
+            {ruleKind ===
+              "hours" && (
+              <div className="flex gap-2">
+
+                <input
+                  type="time"
+                  value={
+                    ruleOpen
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setRuleOpen(
+                      event
+                        .target
+                        .value
+                    )
+                  }
+                  className="border rounded-lg p-3"
+                />
+
+                <input
+                  type="time"
+                  value={
+                    ruleClose
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setRuleClose(
+                      event
+                        .target
+                        .value
+                    )
+                  }
+                  className="border rounded-lg p-3"
+                />
+
               </div>
             )}
 
-            <div>
-              <h3 className="font-medium mb-2">Bookings on {selectedDay}</h3>
-              <div className="md:hidden"><BookingCards rows={selectedList} /></div>
-              <div className="hidden md:block"><BookingTable rows={selectedList} /></div>
-            </div>
-
-            <div className="grid sm:grid-cols-3 gap-2">
-              <button
-                onClick={async () => { setRuleDate(selectedDay); setRuleKind("closed"); await addRule(); await loadMonthRules(monthAnchor); }}
-                className="border px-3 py-2 rounded-lg hover:bg-gray-50 active:scale-[.98]"
-              >Close day</button>
-              <button
-                onClick={async () => { setRuleDate(selectedDay); setRuleKind("hours"); setRuleOpen("12:00"); setRuleClose("16:00"); await addRule(); await loadMonthRules(monthAnchor); }}
-                className="border px-3 py-2 rounded-lg hover:bg-gray-50 active:scale-[.98]"
-              >12:00–16:00 hours</button>
-              <button
-                onClick={async () => { setRuleDate(selectedDay); setRuleKind("blocks"); setRuleBlocks([{ start: "13:00", end: "14:00" }]); await addRule(); await loadMonthRules(monthAnchor); }}
-                className="border px-3 py-2 rounded-lg hover:bg-gray-50 active:scale-[.98]"
-              >Lunch 13:00–14:00</button>
-            </div>
           </div>
-        </section>
 
-        {/* Special Hours & Closures */}
-        <section className="bg-white rounded-xl shadow">
-          <div className="p-4 sm:p-5 text-base sm:text-lg font-semibold">Special Hours & Closures</div>
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <input type="date" className="border rounded-lg p-3 min-h-11" value={ruleDate} onChange={(e) => setRuleDate(e.target.value)} />
-              <select className="border rounded-lg p-3 min-h-11" value={ruleKind} onChange={(e) => setRuleKind(e.target.value)}>
-                <option value="closed">Closed (all day)</option>
-                <option value="hours">Override open/close</option>
-                <option value="blocks">Block time ranges</option>
-              </select>
+          {ruleKind ===
+            "blocks" && (
+            <div className="mt-4 space-y-2">
 
-              {ruleKind === "hours" && (
-                <div className="flex gap-2">
-                  <input type="time" className="border rounded-lg p-3 w-32 min-h-11" value={ruleOpen} onChange={(e) => setRuleOpen(e.target.value)} />
-                  <span className="self-center">to</span>
-                  <input type="time" className="border rounded-lg p-3 w-32 min-h-11" value={ruleClose} onChange={(e) => setRuleClose(e.target.value)} />
-                </div>
+              {ruleBlocks.map(
+                (
+                  block,
+                  index
+                ) => (
+                  <div
+                    key={
+                      index
+                    }
+                    className="flex gap-2"
+                  >
+
+                    <input
+                      type="time"
+                      value={
+                        block.start
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        const next =
+                          [
+                            ...ruleBlocks,
+                          ];
+
+                        next[
+                          index
+                        ] = {
+                          ...next[
+                            index
+                          ],
+
+                          start:
+                            event
+                              .target
+                              .value,
+                        };
+
+                        setRuleBlocks(
+                          next
+                        );
+                      }}
+                      className="border rounded-lg p-3"
+                    />
+
+                    <input
+                      type="time"
+                      value={
+                        block.end
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        const next =
+                          [
+                            ...ruleBlocks,
+                          ];
+
+                        next[
+                          index
+                        ] = {
+                          ...next[
+                            index
+                          ],
+
+                          end:
+                            event
+                              .target
+                              .value,
+                        };
+
+                        setRuleBlocks(
+                          next
+                        );
+                      }}
+                      className="border rounded-lg p-3"
+                    />
+
+                  </div>
+                )
               )}
 
-              {ruleKind === "blocks" && (
-                <div className="md:col-span-2 space-y-2">
-                  {ruleBlocks.map((b, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input type="time" className="border rounded-lg p-3 w-32 min-h-11" value={b.start}
-                        onChange={(e) => { const v = [...ruleBlocks]; v[i] = { ...v[i], start: e.target.value }; setRuleBlocks(v); }} />
-                      <span className="self-center">to</span>
-                      <input type="time" className="border rounded-lg p-3 w-32 min-h-11" value={b.end}
-                        onChange={(e) => { const v = [...ruleBlocks]; v[i] = { ...v[i], end: e.target.value }; setRuleBlocks(v); }} />
-                      <button type="button" className="border px-3 py-2 rounded-lg active:scale-[.98]"
-                        onClick={() => { const v = [...ruleBlocks]; v.splice(i, 1); setRuleBlocks(v.length ? v : [{ start: "13:00", end: "14:00" }]); }}>
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="border px-3 py-2 rounded-lg active:scale-[.98]"
-                    onClick={() => setRuleBlocks([...ruleBlocks, { start: "13:00", end: "14:00" }])}>
-                    + Add block
+              <button
+                onClick={() =>
+                  setRuleBlocks([
+                    ...ruleBlocks,
+
+                    {
+                      start:
+                        "13:00",
+
+                      end:
+                        "14:00",
+                    },
+                  ])
+                }
+                className="border px-3 py-2 rounded-lg"
+              >
+                + Add Block
+              </button>
+
+            </div>
+          )}
+
+          <div className="mt-4">
+
+            <button
+              onClick={
+                addRule
+              }
+              className="bg-black text-white px-4 py-2 rounded-lg"
+            >
+              Save Rule
+            </button>
+
+            {ruleMsg && (
+              <span className="ml-3 text-sm">
+                {
+                  ruleMsg
+                }
+              </span>
+            )}
+
+          </div>
+
+          <div className="mt-6">
+
+            <h3 className="font-medium mb-3">
+              This month's rules
+            </h3>
+
+            {rules.map(
+              (rule) => (
+                <div
+                  key={
+                    rule._id
+                  }
+                  className="flex justify-between border-b py-2"
+                >
+
+                  <div>
+                    <strong>
+                      {
+                        rule.date
+                      }
+                    </strong>
+
+                    {" — "}
+
+                    {
+                      rule.kind
+                    }
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      removeRule(
+                        rule._id
+                      )
+                    }
+                    className="text-red-600"
+                  >
+                    Delete
                   </button>
+
                 </div>
+              )
+            )}
+
+          </div>
+
+        </section>
+
+        {/* HOURS */}
+
+        <section className="bg-white rounded-xl shadow p-5">
+
+          <h2 className="font-semibold text-lg mb-4">
+            Booking Hours
+          </h2>
+
+          {[
+            [
+              "Regular Salon",
+              "regular",
+            ],
+
+            [
+              "Nail Technician",
+              "nails",
+            ],
+          ].map(
+            ([
+              label,
+              type,
+            ]) => (
+              <div
+                key={
+                  type
+                }
+                className="mb-6"
+              >
+
+                <h3 className="font-medium mb-3">
+                  {label}
+                </h3>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+
+                  {[
+                    [
+                      "Tue–Fri",
+                      "weekday",
+                    ],
+
+                    [
+                      "Saturday",
+                      "saturday",
+                    ],
+
+                    [
+                      "Sunday",
+                      "sunday",
+                    ],
+                  ].map(
+                    ([
+                      dayLabel,
+                      key,
+                    ]) => (
+                      <div
+                        key={
+                          key
+                        }
+                        className="border rounded-lg p-3"
+                      >
+
+                        <div className="font-medium mb-2">
+                          {
+                            dayLabel
+                          }
+                        </div>
+
+                        <div className="flex gap-2">
+
+                          <input
+                            type="time"
+                            value={
+                              hours[
+                                type
+                              ]?.[
+                                key
+                              ]?.open ||
+                              ""
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setHours(
+                                (
+                                  current
+                                ) => ({
+                                  ...current,
+
+                                  [
+                                    type
+                                  ]: {
+                                    ...current[
+                                      type
+                                    ],
+
+                                    [
+                                      key
+                                    ]: {
+                                      ...current[
+                                        type
+                                      ][
+                                        key
+                                      ],
+
+                                      open:
+                                        event
+                                          .target
+                                          .value,
+                                    },
+                                  },
+                                })
+                              )
+                            }
+                            className="border rounded-lg p-2 w-full"
+                          />
+
+                          <input
+                            type="time"
+                            value={
+                              hours[
+                                type
+                              ]?.[
+                                key
+                              ]?.close ||
+                              ""
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setHours(
+                                (
+                                  current
+                                ) => ({
+                                  ...current,
+
+                                  [
+                                    type
+                                  ]: {
+                                    ...current[
+                                      type
+                                    ],
+
+                                    [
+                                      key
+                                    ]: {
+                                      ...current[
+                                        type
+                                      ][
+                                        key
+                                      ],
+
+                                      close:
+                                        event
+                                          .target
+                                          .value,
+                                    },
+                                  },
+                                })
+                              )
+                            }
+                            className="border rounded-lg p-2 w-full"
+                          />
+
+                        </div>
+
+                      </div>
+                    )
+                  )}
+
+                </div>
+
+              </div>
+            )
+          )}
+
+          <button
+            onClick={
+              saveHours
+            }
+            className="bg-black text-white px-4 py-2 rounded-lg"
+          >
+            Save Hours
+          </button>
+
+          {hoursMsg && (
+            <span className="ml-3 text-sm">
+              {
+                hoursMsg
+              }
+            </span>
+          )}
+
+        </section>
+
+        {/* QUICK PHONE BOOKING */}
+
+        <section className="bg-white rounded-xl shadow p-5">
+
+          <h2 className="font-semibold text-lg mb-4">
+            Quick Phone Booking
+          </h2>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+
+            <input
+              placeholder="Customer name"
+              value={
+                qName
+              }
+              onChange={(
+                event
+              ) =>
+                setQName(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            />
+
+            <input
+              placeholder="Phone"
+              value={
+                qPhone
+              }
+              onChange={(
+                event
+              ) =>
+                setQPhone(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            />
+
+            <input
+              type="email"
+              placeholder="Email (optional)"
+              value={
+                qEmail
+              }
+              onChange={(
+                event
+              ) =>
+                setQEmail(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3 sm:col-span-2"
+            />
+
+            <select
+              value={
+                qServiceId
+              }
+              onChange={(
+                event
+              ) =>
+                setQServiceId(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3 sm:col-span-2"
+            >
+
+              {SERVICES.map(
+                (service) => (
+                  <option
+                    key={
+                      service.id
+                    }
+                    value={
+                      service.id
+                    }
+                  >
+                    {
+                      service.name
+                    }
+                    {" — "}
+                    {
+                      service.category
+                    }
+                  </option>
+                )
               )}
 
-              <div className="md:col-span-3 flex gap-2 items-center">
-                <button onClick={async () => { await addRule(); await loadMonthRules(monthAnchor); }}
-                  className="bg-black text-white px-4 py-2 rounded-lg active:scale-[.98] min-h-11">
-                  Save rule
-                </button>
-                {ruleMsg && <span className="text-sm">{ruleMsg}</span>}
-              </div>
-            </div>
+            </select>
 
-            <div>
-              <h3 className="font-medium mb-2">This month's rules</h3>
-              <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <table className="w-full text-sm min-w-[560px]">
-                  <thead>
-                    <tr className="text-left border-b">
-                      <th className="py-2 pr-4">Date</th>
-                      <th className="py-2 pr-4">Type</th>
-                      <th className="py-2 pr-4">Details</th>
-                      <th className="py-2 pr-4"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rules.length === 0 && <tr><td className="py-3" colSpan={4}>No rules yet.</td></tr>}
-                    {rules.map((r) => (
-                      <tr key={r._id} className="border-b last:border-0">
-                        <td className="py-2 pr-4">{r.date}</td>
-                        <td className="py-2 pr-4 capitalize">{r.kind}</td>
-                        <td className="py-2 pr-4">
-                          {r.kind === "closed" && "Closed all day"}
-                          {r.kind === "hours" && `Open ${r.open} – ${r.close}`}
-                          {r.kind === "blocks" && (r.blocks?.map((b) => `${b.start}–${b.end}`).join(", ") || "—")}
-                        </td>
-                        <td className="py-2 pr-4">
-                          <button onClick={() => removeRule(r._id)} className="text-red-600">Delete</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <input
+              type="date"
+              value={
+                qDate
+              }
+              onChange={(
+                event
+              ) =>
+                setQDate(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            />
+
+            <select
+              value={
+                qTime
+              }
+              onChange={(
+                event
+              ) =>
+                setQTime(
+                  event.target
+                    .value
+                )
+              }
+              className="border rounded-lg p-3"
+            >
+              <option value="">
+                Select time
+              </option>
+
+              {qSlots.map(
+                (slot) => (
+                  <option
+                    key={
+                      slot
+                    }
+                    value={
+                      slot
+                    }
+                  >
+                    {
+                      slot
+                    }
+                  </option>
+                )
+              )}
+
+            </select>
+
           </div>
-        </section>
 
-        {/* Booking Hours */}
-        <section className="bg-white rounded-xl shadow">
-          <div className="p-4 sm:p-5 text-base sm:text-lg font-semibold">Booking Hours</div>
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-6">
+          <div className="mt-4">
 
-            <div>
-              <h3 className="font-medium mb-3">Regular Salon Hours</h3>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {[
-                  { label: "Tue–Fri", key: "weekday" },
-                  { label: "Saturday", key: "saturday" },
-                  { label: "Sunday", key: "sunday" },
-                ].map(({ label, key }) => (
-                  <div key={key} className="border rounded-lg p-4">
-                    <div className="font-medium mb-2">{label}</div>
-                    <div className="flex gap-2">
-                      <input type="time" className="border rounded-lg p-3 w-32"
-                        value={hours.regular?.[key]?.open || "11:00"}
-                        onChange={(e) => setHours((h) => ({ ...h, regular: { ...h.regular, [key]: { ...h.regular[key], open: e.target.value } } }))}
-                      />
-                      <span className="self-center">to</span>
-                      <input type="time" className="border rounded-lg p-3 w-32"
-                        value={hours.regular?.[key]?.close || "17:00"}
-                        onChange={(e) => setHours((h) => ({ ...h, regular: { ...h.regular, [key]: { ...h.regular[key], close: e.target.value } } }))}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <button
+              onClick={
+                createBooking
+              }
+              className="bg-black text-white px-4 py-2 rounded-lg"
+            >
+              Create Booking
+            </button>
 
-            <div>
-              <h3 className="font-medium mb-3">Nail Technician Hours</h3>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {[
-                  { label: "Tue–Fri", key: "weekday" },
-                  { label: "Saturday", key: "saturday" },
-                  { label: "Sunday", key: "sunday" },
-                ].map(({ label, key }) => (
-                  <div key={key} className="border rounded-lg p-4">
-                    <div className="font-medium mb-2">{label}</div>
-                    <div className="flex gap-2">
-                      <input type="time" className="border rounded-lg p-3 w-32"
-                        value={hours.nails?.[key]?.open || "11:00"}
-                        onChange={(e) => setHours((h) => ({ ...h, nails: { ...h.nails, [key]: { ...(h.nails[key] || {}), open: e.target.value } } }))}
-                      />
-                      <span className="self-center">to</span>
-                      <input type="time" className="border rounded-lg p-3 w-32"
-                        value={hours.nails?.[key]?.close || "17:00"}
-                        onChange={(e) => setHours((h) => ({ ...h, nails: { ...h.nails, [key]: { ...(h.nails[key] || {}), close: e.target.value } } }))}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {qMsg && (
+              <span className="ml-3 text-sm">
+                {
+                  qMsg
+                }
+              </span>
+            )}
 
-            <div className="mt-1 flex gap-2 items-center">
-              <button onClick={saveHours} className="bg-black text-white px-4 py-2 rounded-lg active:scale-[.98] min-h-11">Save</button>
-              {hoursMsg && <span className="text-sm">{hoursMsg}</span>}
-            </div>
-            <p className="text-xs text-gray-500">Note: changes reset on server restart (in-memory).</p>
           </div>
-        </section>
 
-        {/* Quick Phone Booking */}
-        <section className="bg-white rounded-xl shadow">
-          <div className="p-4 sm:p-5 text-base sm:text-lg font-semibold">Quick Phone Booking</div>
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input className="border rounded-lg p-3 min-h-11" placeholder="Customer name" value={qName} onChange={(e) => setQName(e.target.value)} />
-              <input className="border rounded-lg p-3 min-h-11" placeholder="Phone" inputMode="tel" value={qPhone} onChange={(e) => setQPhone(e.target.value)} />
-              <input className="border rounded-lg p-3 min-h-11 sm:col-span-2" type="email" placeholder="Email (optional)" value={qEmail} onChange={(e) => setQEmail(e.target.value)} />
-
-              <select className="border rounded-lg p-3 min-h-11 sm:col-span-2" value={qServiceId} onChange={(e) => setQServiceId(e.target.value)}>
-                {[["Women","women"],["Men","men"],["Waxing","waxing"],["Coloring","coloring"],["Nails","nails"]].map(([label, cat]) => (
-                  <optgroup key={cat} label={label}>
-                    {SERVICES.filter((s) => s.category === cat).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.minutes}m)</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-
-              <input type="date" className="border rounded-lg p-3 min-h-11" value={qDate} onChange={(e) => setQDate(e.target.value)} />
-
-              <select className="border rounded-lg p-3 min-h-11" value={qTime} onChange={(e) => setQTime(e.target.value)}>
-                <option value="">Select time</option>
-                {qSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-              </select>
-            </div>
-
-            <div className="flex gap-2 items-center">
-              <button onClick={createBooking} className="bg-black text-white px-4 py-2 rounded-lg active:scale-[.98] min-h-11">Create Booking</button>
-              {qMsg && <span className="text-sm">{qMsg}</span>}
-            </div>
-          </div>
         </section>
 
       </div>
+
     </div>
   );
 }
