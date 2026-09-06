@@ -10,24 +10,40 @@ import Booking from "./Booking.js";
 
 dotenv.config();
 
+/* =====================================================
+   BASIC CONFIG
+===================================================== */
+
 const app = express();
 
 const PORT = Number(process.env.PORT) || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
+
+const JWT_SECRET =
+  process.env.JWT_SECRET || "devsecret";
 
 const ORIGINS = (
-  process.env.CLIENT_ORIGIN || "http://localhost:5173"
+  process.env.CLIENT_ORIGIN ||
+  "http://localhost:5173"
 )
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
+/* =====================================================
+   MIDDLEWARE
+===================================================== */
+
 app.use(
   cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true);
+    origin(origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
 
-      return cb(null, ORIGINS.includes(origin));
+      return callback(
+        null,
+        ORIGINS.includes(origin)
+      );
     },
 
     credentials: true,
@@ -36,42 +52,71 @@ app.use(
 
 app.use(express.json());
 
-const pad = (n) => n.toString().padStart(2, "0");
+/* =====================================================
+   TIME HELPERS
+===================================================== */
+
+const pad = (n) =>
+  String(n).padStart(2, "0");
 
 const toMin = (hhmm) => {
-  const [h, m] = (hhmm || "00:00")
+  const [hours, minutes] = (
+    hhmm || "00:00"
+  )
     .split(":")
     .map(Number);
 
-  return h * 60 + m;
+  return hours * 60 + minutes;
 };
 
-const fromMin = (mins) =>
-  `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
+const fromMin = (minutes) => {
+  return `${pad(
+    Math.floor(minutes / 60)
+  )}:${pad(minutes % 60)}`;
+};
 
-const addMinutes = (hhmm, mins) =>
-  fromMin(toMin(hhmm) + mins);
+const addMinutes = (
+  time,
+  minutes
+) => {
+  return fromMin(
+    toMin(time) + minutes
+  );
+};
 
 const overlap = (
-  aStart,
-  aEnd,
-  bStart,
-  bEnd
-) =>
-  toMin(aStart) < toMin(bEnd) &&
-  toMin(bStart) < toMin(aEnd);
+  startA,
+  endA,
+  startB,
+  endB
+) => {
+  return (
+    toMin(startA) < toMin(endB) &&
+    toMin(startB) < toMin(endA)
+  );
+};
 
-function requireAdmin(req, res, next) {
-  const auth = req.headers.authorization || "";
+/* =====================================================
+   ADMIN AUTH
+===================================================== */
 
-  const token = auth.startsWith("Bearer ")
-    ? auth.slice(7)
-    : null;
+function requireAdmin(
+  req,
+  res,
+  next
+) {
+  const authHeader =
+    req.headers.authorization || "";
+
+  const token =
+    authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
 
   if (!token) {
-    return res
-      .status(401)
-      .json({ error: "Auth required" });
+    return res.status(401).json({
+      error: "Auth required",
+    });
   }
 
   try {
@@ -80,21 +125,27 @@ function requireAdmin(req, res, next) {
       JWT_SECRET
     );
 
-    if (payload.role !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Forbidden" });
+    if (
+      payload.role !== "admin"
+    ) {
+      return res.status(403).json({
+        error: "Forbidden",
+      });
     }
 
     req.user = payload;
 
     next();
   } catch {
-    return res
-      .status(401)
-      .json({ error: "Invalid token" });
+    return res.status(401).json({
+      error: "Invalid token",
+    });
   }
 }
+
+/* =====================================================
+   STORE HOURS
+===================================================== */
 
 let HOURS = {
   regular: {
@@ -133,41 +184,39 @@ let HOURS = {
 };
 
 function getHoursForDate(
-  yyyyMmDd,
+  date,
   bookingType = "regular"
 ) {
   const d = new Date(
-    yyyyMmDd + "T00:00:00"
+    `${date}T00:00:00`
   );
 
   const day = d.getDay();
 
-  if (bookingType === "nails") {
-    if (day === 1) return null;
-
-    if (day === 0) {
-      return HOURS.nails.sunday;
-    }
-
-    if (day === 6) {
-      return HOURS.nails.saturday;
-    }
-
-    return HOURS.nails.weekday;
+  // Monday closed
+  if (day === 1) {
+    return null;
   }
 
-  if (day === 1) return null;
+  const group =
+    bookingType === "nails"
+      ? HOURS.nails
+      : HOURS.regular;
 
   if (day === 0) {
-    return HOURS.regular.sunday;
+    return group.sunday;
   }
 
   if (day === 6) {
-    return HOURS.regular.saturday;
+    return group.saturday;
   }
 
-  return HOURS.regular.weekday;
+  return group.weekday;
 }
+
+/* =====================================================
+   SERVICE DURATIONS
+===================================================== */
 
 const DURATION_BY_ID = {
   // WOMEN
@@ -215,13 +264,20 @@ const DURATION_BY_ID = {
   n9: 45,
 };
 
+/* =====================================================
+   EMAIL
+===================================================== */
+
 const {
   SMTP_HOST = "smtp.gmail.com",
   SMTP_PORT = 587,
   SMTP_USER,
   SMTP_PASS,
   EMAIL_FROM,
-  SITE_NAME = "H&L Hair Studio",
+
+  SITE_NAME =
+    "H&L Hair Studio",
+
   SITE_URL = "",
   STUDIO_PHONE = "",
   STUDIO_ADDRESS = "",
@@ -235,7 +291,8 @@ const transporter =
         port: Number(SMTP_PORT),
 
         secure:
-          Number(SMTP_PORT) === 465,
+          Number(SMTP_PORT) ===
+          465,
 
         auth: {
           user: SMTP_USER,
@@ -243,11 +300,13 @@ const transporter =
         },
 
         requireTLS:
-          Number(SMTP_PORT) === 587,
+          Number(SMTP_PORT) ===
+          587,
 
         pool: true,
 
-        connectionTimeout: 10000,
+        connectionTimeout:
+          10000,
       })
     : null;
 
@@ -266,10 +325,10 @@ async function verifyEmailTransport() {
     console.log(
       "Mail transport verified"
     );
-  } catch (e) {
+  } catch (error) {
     console.warn(
-      "Mail transport verify failed:",
-      e.message
+      "Mail verification failed:",
+      error.message
     );
   }
 }
@@ -282,17 +341,41 @@ function sendBookingConfirmation(
     !booking.email
   ) {
     return Promise.resolve({
-      ok: false,
       skipped: true,
     });
   }
 
   const subject =
-    `${SITE_NAME} — Booking confirmed for ` +
-    `${booking.date} at ${booking.time}`;
+    `${SITE_NAME} — Booking confirmed ` +
+    `for ${booking.date} at ${booking.time}`;
+
+  const text = `
+${SITE_NAME}
+
+Hi ${booking.name},
+
+Your appointment is confirmed.
+
+Service:
+${booking.serviceCategory} — ${booking.serviceName}
+
+Date:
+${booking.date}
+
+Time:
+${booking.time} - ${booking.endTime}
+
+Phone:
+${STUDIO_PHONE}
+
+Address:
+${STUDIO_ADDRESS}
+
+${SITE_URL}
+`;
 
   const html = `
-    <div style="font-family: Arial, sans-serif">
+    <div style="font-family:Arial,sans-serif;line-height:1.5">
 
       <h2>
         ${SITE_NAME} — Booking Confirmed
@@ -300,36 +383,39 @@ function sendBookingConfirmation(
 
       <p>
         Hi ${booking.name},
-        thanks for booking with us!
+        thanks for booking with us.
       </p>
 
       <p>
-        <strong>Service:</strong>
+        <strong>Service:</strong><br>
         ${booking.serviceCategory}
         —
         ${booking.serviceName}
       </p>
 
       <p>
-        <strong>Date:</strong>
+        <strong>Date:</strong><br>
         ${booking.date}
       </p>
 
       <p>
-        <strong>Time:</strong>
+        <strong>Time:</strong><br>
         ${booking.time}
         -
         ${booking.endTime}
       </p>
 
-      <p>
-        Need to make a change?
-        Call ${STUDIO_PHONE}.
-      </p>
+      ${
+        STUDIO_PHONE
+          ? `<p><strong>Phone:</strong><br>${STUDIO_PHONE}</p>`
+          : ""
+      }
 
-      <p>
-        ${STUDIO_ADDRESS}
-      </p>
+      ${
+        STUDIO_ADDRESS
+          ? `<p><strong>Address:</strong><br>${STUDIO_ADDRESS}</p>`
+          : ""
+      }
 
     </div>
   `;
@@ -344,43 +430,63 @@ function sendBookingConfirmation(
 
     subject,
 
+    text,
+
     html,
   });
 }
 
+/* =====================================================
+   DATABASE / FALLBACK
+===================================================== */
+
 const useDb = () =>
-  mongoose.connection.readyState === 1;
+  mongoose.connection.readyState ===
+  1;
 
 const DEV_BOOKINGS = [];
 const DEV_RULES = [];
 
 let SpecialRule = null;
-let SpecialRuleModelReady = false;
+
+let SpecialRuleModelReady =
+  false;
+
+/* =====================================================
+   BOOKING HELPERS
+===================================================== */
 
 /*
-  This helper is important.
+  IMPORTANT:
 
-  Old bookings may not contain
-  bookingType.
+  Old bookings may not have
+  bookingType because your old
+  Booking schema did not contain it.
 
-  We treat old bookings as
+  Old bookings are treated as
   "regular".
 */
+
 async function getBookingsForDate(
   date,
-  bookingType
+  bookingType = "regular"
 ) {
   if (!useDb()) {
     return DEV_BOOKINGS.filter(
-      (b) =>
-        b.date === date &&
-        (b.bookingType || "regular") ===
-          bookingType &&
-        b.status !== "cancelled"
+      (booking) =>
+        booking.date === date &&
+        (
+          booking.bookingType ||
+          "regular"
+        ) === bookingType &&
+        booking.status !==
+          "cancelled"
     );
   }
 
-  if (bookingType === "regular") {
+  if (
+    bookingType === "regular"
+  ) {
     return Booking.find({
       date,
 
@@ -390,7 +496,8 @@ async function getBookingsForDate(
 
       $or: [
         {
-          bookingType: "regular",
+          bookingType:
+            "regular",
         },
 
         {
@@ -417,13 +524,6 @@ async function getBookingsForDate(
   }).lean();
 }
 
-/*
-  Safely calculate an existing
-  booking's end time.
-
-  This also protects old database
-  records.
-*/
 function getBookingEndTime(
   booking
 ) {
@@ -444,13 +544,20 @@ function getBookingEndTime(
   );
 }
 
-app.get("/", (_req, res) => {
-  res
-    .type("text")
-    .send(
-      "H&L Hair Studio API is running."
-    );
-});
+/* =====================================================
+   ROOT / HEALTH
+===================================================== */
+
+app.get(
+  "/",
+  (_req, res) => {
+    res
+      .type("text")
+      .send(
+        "H&L Hair Studio API is running."
+      );
+  }
+);
 
 app.get(
   "/health",
@@ -458,35 +565,42 @@ app.get(
     res.json({
       ok: true,
 
+      mongoConnected:
+        useDb(),
+
       time:
         new Date().toISOString(),
-
-      databaseConnected:
-        useDb(),
     });
   }
 );
 
+/* =====================================================
+   LOGIN
+===================================================== */
+
 app.post(
   "/api/auth/login",
   (req, res) => {
-    const bodyPwd = (
-      req.body?.password ?? ""
+    const password = (
+      req.body?.password || ""
     ).trim();
 
-    const envPwd = (
-      process.env.ADMIN_PASSWORD ??
-      ""
+    const adminPassword = (
+      process.env
+        .ADMIN_PASSWORD || ""
     ).trim();
 
-    if (!envPwd) {
+    if (!adminPassword) {
       return res.status(500).json({
         error:
-          "Server misconfigured: ADMIN_PASSWORD not set",
+          "ADMIN_PASSWORD is not configured.",
       });
     }
 
-    if (bodyPwd !== envPwd) {
+    if (
+      password !==
+      adminPassword
+    ) {
       return res.status(401).json({
         error:
           "Invalid credentials",
@@ -505,7 +619,7 @@ app.post(
       }
     );
 
-    res.json({
+    return res.json({
       token,
     });
   }
@@ -515,7 +629,7 @@ app.get(
   "/api/admin/me",
   requireAdmin,
   (req, res) => {
-    res.json({
+    return res.json({
       ok: true,
 
       user: {
@@ -525,9 +639,9 @@ app.get(
   }
 );
 
-/* =========================
+/* =====================================================
    PUBLIC AVAILABILITY
-========================= */
+===================================================== */
 
 app.get(
   "/api/availability",
@@ -539,7 +653,10 @@ app.get(
         bookingType = "regular",
       } = req.query;
 
-      if (!date || !serviceId) {
+      if (
+        !date ||
+        !serviceId
+      ) {
         return res.status(400).json({
           error:
             "Missing date or serviceId",
@@ -547,7 +664,9 @@ app.get(
       }
 
       const duration =
-        DURATION_BY_ID[serviceId];
+        DURATION_BY_ID[
+          serviceId
+        ];
 
       if (!duration) {
         return res.status(400).json({
@@ -592,14 +711,17 @@ app.get(
       } else {
         rules =
           DEV_RULES.filter(
-            (r) => r.date === date
+            (rule) =>
+              rule.date === date
           );
       }
 
+      // Entire day closed
       if (
         rules.some(
-          (r) =>
-            r.kind === "closed"
+          (rule) =>
+            rule.kind ===
+            "closed"
         )
       ) {
         return res.json({
@@ -613,20 +735,26 @@ app.get(
         });
       }
 
+      // Special hours
       const hoursRule =
         rules.find(
-          (r) =>
-            r.kind === "hours"
+          (rule) =>
+            rule.kind ===
+            "hours"
         );
 
       if (
         hoursRule?.open &&
         hoursRule?.close
       ) {
-        open = hoursRule.open;
-        close = hoursRule.close;
+        open =
+          hoursRule.open;
+
+        close =
+          hoursRule.close;
       }
 
+      // Confirmed bookings only
       const bookings =
         await getBookingsForDate(
           date,
@@ -674,10 +802,12 @@ app.get(
         }
       }
 
+      // Blocked ranges
       const blockRule =
         rules.find(
-          (r) =>
-            r.kind === "blocks"
+          (rule) =>
+            rule.kind ===
+            "blocks"
         );
 
       const finalSlots =
@@ -716,19 +846,17 @@ app.get(
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          error:
-            "Failed to load availability",
-        });
+      return res.status(500).json({
+        error:
+          "Failed to load availability",
+      });
     }
   }
 );
 
-/* =========================
+/* =====================================================
    PUBLIC CREATE BOOKING
-========================= */
+===================================================== */
 
 app.post(
   "/api/bookings",
@@ -743,7 +871,9 @@ app.post(
         serviceCategory,
         date,
         time,
-        bookingType = "regular",
+
+        bookingType =
+          "regular",
       } = req.body || {};
 
       const required = [
@@ -759,33 +889,35 @@ app.post(
 
       const missing =
         required.filter(
-          (key) =>
-            !req.body?.[key]
+          (field) =>
+            !req.body?.[
+              field
+            ]
         );
 
-      if (missing.length) {
-        return res
-          .status(400)
-          .json({
-            error:
-              `Missing: ${missing.join(
-                ", "
-              )}`,
-          });
+      if (
+        missing.length
+      ) {
+        return res.status(400).json({
+          error:
+            `Missing: ${missing.join(
+              ", "
+            )}`,
+        });
       }
 
       if (
         ![
           "regular",
           "nails",
-        ].includes(bookingType)
+        ].includes(
+          bookingType
+        )
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Invalid booking type",
-          });
+        return res.status(400).json({
+          error:
+            "Invalid booking type",
+        });
       }
 
       const durationMinutes =
@@ -796,12 +928,10 @@ app.post(
       if (
         !durationMinutes
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Invalid serviceId",
-          });
+        return res.status(400).json({
+          error:
+            "Invalid serviceId",
+        });
       }
 
       const endTime =
@@ -817,12 +947,10 @@ app.post(
         );
 
       if (!dayHours) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Store is closed on this date.",
-          });
+        return res.status(400).json({
+          error:
+            "Store is closed on this date.",
+        });
       }
 
       let {
@@ -843,29 +971,29 @@ app.post(
       } else {
         rules =
           DEV_RULES.filter(
-            (r) =>
-              r.date === date
+            (rule) =>
+              rule.date === date
           );
       }
 
       if (
         rules.some(
-          (r) =>
-            r.kind === "closed"
+          (rule) =>
+            rule.kind ===
+            "closed"
         )
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Store is closed on this date.",
-          });
+        return res.status(400).json({
+          error:
+            "Store is closed on this date.",
+        });
       }
 
       const hoursRule =
         rules.find(
-          (r) =>
-            r.kind === "hours"
+          (rule) =>
+            rule.kind ===
+            "hours"
         );
 
       if (
@@ -885,38 +1013,35 @@ app.post(
         toMin(endTime) >
           toMin(close)
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Selected time is outside store hours.",
-          });
+        return res.status(400).json({
+          error:
+            "Selected time is outside store hours.",
+        });
       }
 
       const blockRule =
         rules.find(
-          (r) =>
-            r.kind === "blocks"
+          (rule) =>
+            rule.kind ===
+            "blocks"
         );
 
-      if (
-        blockRule?.blocks
-          ?.some(
-            (block) =>
-              overlap(
-                time,
-                endTime,
-                block.start,
-                block.end
-              )
-          )
-      ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Selected time is blocked.",
-          });
+      const blocked =
+        blockRule?.blocks?.some(
+          (block) =>
+            overlap(
+              time,
+              endTime,
+              block.start,
+              block.end
+            )
+        );
+
+      if (blocked) {
+        return res.status(400).json({
+          error:
+            "Selected time is blocked.",
+        });
       }
 
       const sameDay =
@@ -928,27 +1053,22 @@ app.post(
       const conflict =
         sameDay.some(
           (booking) => {
-            const existingEnd =
-              getBookingEndTime(
-                booking
-              );
-
             return overlap(
               time,
               endTime,
               booking.time,
-              existingEnd
+              getBookingEndTime(
+                booking
+              )
             );
           }
         );
 
       if (conflict) {
-        return res
-          .status(409)
-          .json({
-            error:
-              "Time slot no longer available.",
-          });
+        return res.status(409).json({
+          error:
+            "Time slot no longer available.",
+        });
       }
 
       const doc = {
@@ -963,6 +1083,7 @@ app.post(
         time,
         endTime,
         durationMinutes,
+
         status:
           "confirmed",
       };
@@ -992,35 +1113,31 @@ app.post(
       ).catch((error) => {
         console.error(
           "Email failed:",
-          error
+          error.message
         );
       });
 
-      return res
-        .status(201)
-        .json({
-          success: true,
-          booking,
-        });
+      return res.status(201).json({
+        success: true,
+        booking,
+      });
     } catch (error) {
       console.error(
         "Booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          error:
-            "Booking failed.",
-        });
+      return res.status(500).json({
+        error:
+          "Booking failed.",
+      });
     }
   }
 );
 
-/* =========================
+/* =====================================================
    ADMIN CREATE BOOKING
-========================= */
+===================================================== */
 
 app.post(
   "/api/admin/bookings",
@@ -1036,8 +1153,39 @@ app.post(
         serviceCategory,
         date,
         time,
-        bookingType = "regular",
+
+        bookingType =
+          "regular",
       } = req.body || {};
+
+      const required = [
+        "name",
+        "phone",
+        "serviceId",
+        "serviceName",
+        "serviceCategory",
+        "date",
+        "time",
+      ];
+
+      const missing =
+        required.filter(
+          (field) =>
+            !req.body?.[
+              field
+            ]
+        );
+
+      if (
+        missing.length
+      ) {
+        return res.status(400).json({
+          error:
+            `Missing: ${missing.join(
+              ", "
+            )}`,
+        });
+      }
 
       const durationMinutes =
         DURATION_BY_ID[
@@ -1047,12 +1195,10 @@ app.post(
       if (
         !durationMinutes
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Invalid serviceId",
-          });
+        return res.status(400).json({
+          error:
+            "Invalid serviceId",
+        });
       }
 
       const endTime =
@@ -1069,28 +1215,22 @@ app.post(
 
       const conflict =
         sameDay.some(
-          (booking) => {
-            const existingEnd =
-              getBookingEndTime(
-                booking
-              );
-
-            return overlap(
+          (booking) =>
+            overlap(
               time,
               endTime,
               booking.time,
-              existingEnd
-            );
-          }
+              getBookingEndTime(
+                booking
+              )
+            )
         );
 
       if (conflict) {
-        return res
-          .status(409)
-          .json({
-            error:
-              "Time slot no longer available.",
-          });
+        return res.status(409).json({
+          error:
+            "Time slot no longer available.",
+        });
       }
 
       const doc = {
@@ -1104,13 +1244,13 @@ app.post(
         time,
         endTime,
         durationMinutes,
+
         status:
           "confirmed",
       };
 
       if (email) {
-        doc.email =
-          email;
+        doc.email = email;
       }
 
       let booking;
@@ -1139,36 +1279,130 @@ app.post(
         ).catch((error) => {
           console.error(
             "Email failed:",
-            error
+            error.message
           );
         });
       }
 
-      return res
-        .status(201)
-        .json({
-          success: true,
-          booking,
-        });
+      return res.status(201).json({
+        success: true,
+        booking,
+      });
     } catch (error) {
       console.error(
         "Admin booking error:",
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          error:
-            "Booking failed.",
-        });
+      return res.status(500).json({
+        error:
+          "Booking failed.",
+      });
     }
   }
 );
 
-/* =========================
+/* =====================================================
+   ADMIN CANCEL BOOKING
+===================================================== */
+
+app.patch(
+  "/api/admin/bookings/:id/cancel",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } =
+        req.params;
+
+      if (useDb()) {
+        const booking =
+          await Booking.findById(
+            id
+          );
+
+        if (!booking) {
+          return res.status(404).json({
+            error:
+              "Booking not found",
+          });
+        }
+
+        if (
+          booking.status ===
+          "cancelled"
+        ) {
+          return res.json({
+            success: true,
+
+            message:
+              "Appointment is already cancelled.",
+
+            booking,
+          });
+        }
+
+        booking.status =
+          "cancelled";
+
+        booking.cancelledAt =
+          new Date();
+
+        await booking.save();
+
+        return res.json({
+          success: true,
+
+          message:
+            "Appointment cancelled successfully.",
+
+          booking,
+        });
+      }
+
+      const booking =
+        DEV_BOOKINGS.find(
+          (item) =>
+            item._id === id
+        );
+
+      if (!booking) {
+        return res.status(404).json({
+          error:
+            "Booking not found",
+        });
+      }
+
+      booking.status =
+        "cancelled";
+
+      booking.cancelledAt =
+        new Date();
+
+      return res.json({
+        success: true,
+
+        message:
+          "Appointment cancelled successfully.",
+
+        booking,
+      });
+    } catch (error) {
+      console.error(
+        "Cancel booking error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to cancel appointment.",
+      });
+    }
+  }
+);
+
+/* =====================================================
    ADMIN LIST BOOKINGS
-========================= */
+===================================================== */
 
 app.get(
   "/api/admin/bookings",
@@ -1181,14 +1415,13 @@ app.get(
       let rows = [];
 
       if (useDb()) {
-        const query =
-          from
-            ? {
-                date: {
-                  $gte: from,
-                },
-              }
-            : {};
+        const query = from
+          ? {
+              date: {
+                $gte: from,
+              },
+            }
+          : {};
 
         rows =
           await Booking.find(
@@ -1203,9 +1436,10 @@ app.get(
         rows =
           DEV_BOOKINGS
             .filter(
-              (b) =>
+              (booking) =>
                 !from ||
-                b.date >= from
+                booking.date >=
+                  from
             )
             .sort(
               (a, b) =>
@@ -1228,25 +1462,25 @@ app.get(
         error
       );
 
-      return res
-        .status(500)
-        .json({
-          error:
-            "Failed to load bookings",
-        });
+      return res.status(500).json({
+        error:
+          "Failed to load bookings",
+      });
     }
   }
 );
 
-/* =========================
+/* =====================================================
    ADMIN HOURS
-========================= */
+===================================================== */
 
 app.get(
   "/api/admin/hours",
   requireAdmin,
   (_req, res) => {
-    res.json(HOURS);
+    return res.json(
+      HOURS
+    );
   }
 );
 
@@ -1263,12 +1497,10 @@ app.put(
       !regular ||
       !nails
     ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Missing regular or nails hours",
-        });
+      return res.status(400).json({
+        error:
+          "Missing regular or nails hours",
+      });
     }
 
     HOURS = {
@@ -1276,16 +1508,16 @@ app.put(
       nails,
     };
 
-    res.json({
+    return res.json({
       ok: true,
       HOURS,
     });
   }
 );
 
-/* =========================
+/* =====================================================
    ADMIN SPECIAL RULES
-========================= */
+===================================================== */
 
 app.get(
   "/api/admin/rules",
@@ -1299,14 +1531,13 @@ app.get(
         useDb() &&
         SpecialRuleModelReady
       ) {
-        const query =
-          from
-            ? {
-                date: {
-                  $gte: from,
-                },
-              }
-            : {};
+        const query = from
+          ? {
+              date: {
+                $gte: from,
+              },
+            }
+          : {};
 
         const rules =
           await SpecialRule.find(
@@ -1323,22 +1554,32 @@ app.get(
       }
 
       const rules =
-        DEV_RULES.filter(
-          (r) =>
-            !from ||
-            r.date >= from
-        );
+        DEV_RULES
+          .filter(
+            (rule) =>
+              !from ||
+              rule.date >= from
+          )
+          .sort(
+            (a, b) =>
+              a.date.localeCompare(
+                b.date
+              )
+          );
 
       return res.json(
         rules
       );
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          error:
-            "Failed to load rules",
-        });
+      console.error(
+        "Rules load error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to load rules",
+      });
     }
   }
 );
@@ -1361,12 +1602,10 @@ app.post(
         !date ||
         !kind
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "date and kind are required",
-          });
+        return res.status(400).json({
+          error:
+            "date and kind are required",
+        });
       }
 
       if (
@@ -1376,12 +1615,10 @@ app.post(
           "blocks",
         ].includes(kind)
       ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Invalid rule type",
-          });
+        return res.status(400).json({
+          error:
+            "Invalid rule type",
+        });
       }
 
       if (
@@ -1423,12 +1660,15 @@ app.post(
         rule
       );
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          error:
-            "Failed to save rule",
-        });
+      console.error(
+        "Rule create error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to save rule",
+      });
     }
   }
 );
@@ -1438,9 +1678,8 @@ app.delete(
   requireAdmin,
   async (req, res) => {
     try {
-      const {
-        id,
-      } = req.params;
+      const { id } =
+        req.params;
 
       if (
         useDb() &&
@@ -1457,8 +1696,8 @@ app.delete(
 
       const index =
         DEV_RULES.findIndex(
-          (r) =>
-            r._id === id
+          (rule) =>
+            rule._id === id
         );
 
       if (index >= 0) {
@@ -1472,21 +1711,34 @@ app.delete(
         ok: true,
       });
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          error:
-            "Failed to delete rule",
-        });
+      console.error(
+        "Delete rule error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Failed to delete rule",
+      });
     }
   }
 );
 
-app.use((req, res) => {
-  res.status(404).json({
-    error: "Not found",
-  });
-});
+/* =====================================================
+   404
+===================================================== */
+
+app.use(
+  (req, res) => {
+    return res.status(404).json({
+      error: "Not found",
+    });
+  }
+);
+
+/* =====================================================
+   START SERVER
+===================================================== */
 
 async function start() {
   try {
@@ -1511,6 +1763,7 @@ async function start() {
             start: String,
             end: String,
           },
+
           {
             _id: false,
           }
@@ -1526,11 +1779,13 @@ async function start() {
 
             kind: {
               type: String,
+
               enum: [
                 "closed",
                 "hours",
                 "blocks",
               ],
+
               required: true,
             },
 
@@ -1542,6 +1797,7 @@ async function start() {
               type: [
                 blockSchema,
               ],
+
               default: [],
             },
 
@@ -1568,12 +1824,12 @@ async function start() {
         true;
     } else {
       console.log(
-        "No MONGO_URI set — using in-memory storage"
+        "No MONGO_URI — using memory storage"
       );
     }
   } catch (error) {
     console.error(
-      "Mongo connection error:",
+      "MongoDB connection error:",
       error.message
     );
   }
