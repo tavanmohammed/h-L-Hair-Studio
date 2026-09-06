@@ -40,6 +40,8 @@ const BookingSchema = new mongoose.Schema(
       required: true,
     },
 
+    // IMPORTANT:
+    // This was missing before.
     bookingType: {
       type: String,
       enum: ["regular", "nails"],
@@ -71,6 +73,11 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       enum: ["confirmed", "cancelled"],
       default: "confirmed",
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
     },
   },
   {
