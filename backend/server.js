@@ -147,20 +147,27 @@ function requireAdmin(
 
 let HOURS = {
   regular: {
-    weekday: {
-      open: "11:00",
-      close: "19:00",
-    },
+  monday: {
+    open: "",
+    close: "",
+  },
 
-    saturday: {
-      open: "11:00",
-      close: "19:00",
-    },
+  weekday: {
+    open: "11:00",
+    close: "19:00",
+  },
 
-    sunday: {
-      open: "11:00",
-      close: "17:00",
-    },
+  saturday: {
+    open: "11:00",
+    close: "19:00",
+  },
+
+  sunday: {
+    open: "11:00",
+    close: "17:00",
+  },
+},
+   
   },
 
   nails: {
@@ -185,22 +192,21 @@ function getHoursForDate(
   date,
   bookingType = "regular"
 ) {
-  const d = new Date(
-    `${date}T00:00:00`
-  );
+  const d =
+    new Date(
+      `${date}T00:00:00`
+    );
 
-  const day = d.getDay();
+  const day =
+    d.getDay();
 
   const group =
     bookingType === "nails"
       ? HOURS.nails
       : HOURS.regular;
 
-  // Monday is CLOSED by default.
-  // Admin can open a specific Monday
-  // using a special "hours" rule.
   if (day === 1) {
-    return {
+    return group.monday || {
       open: "",
       close: "",
     };
