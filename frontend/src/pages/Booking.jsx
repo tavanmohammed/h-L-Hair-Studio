@@ -1,76 +1,241 @@
-import BookingForm from "../components/BookingForm";
-import { servicesData } from "../data/servicesData";
+{/* SPECIAL HOURS */}
 
-export default function Booking() {
-  const mainCategories = [
-    {
-      key: "women",
-      label: "Women",
-      items: servicesData.women,
-    },
-    {
-      key: "men",
-      label: "Men",
-      items: servicesData.men,
-    },
-    {
-      key: "waxing",
-      label: "Waxing",
-      items: servicesData.waxing,
-    },
-    {
-      key: "coloring",
-      label: "Coloring",
-      items: servicesData.coloring,
-    },
-  ];
+<section className="bg-white rounded-xl shadow p-5">
 
-  const nailsCategories = [
-    {
-      key: "nails",
-      label: "Nails",
-      items: servicesData.nails,
-    },
-  ];
+  <h2 className="font-semibold text-lg mb-2">
+    Special Hours, Monday Opening & Closures
+  </h2>
 
-  return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-      <div className="max-w-3xl mb-12">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-medium">
-          Booking
-        </p>
+  <p className="text-sm text-gray-600 mb-4">
+    Monday is closed by default. To open a specific Monday,
+    choose the Monday date, select Open / Override hours,
+    choose the opening and closing times, then save the rule.
+  </p>
 
-        <h1
-          className="mt-4 text-4xl sm:text-5xl text-gray-900 leading-tight"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+  <div className="grid gap-3 md:grid-cols-3">
+
+    <input
+      type="date"
+      value={ruleDate}
+      onChange={(event) =>
+        setRuleDate(
+          event.target.value
+        )
+      }
+      className="border rounded-lg p-3"
+    />
+
+    <select
+      value={ruleKind}
+      onChange={(event) =>
+        setRuleKind(
+          event.target.value
+        )
+      }
+      className="border rounded-lg p-3"
+    >
+      <option value="closed">
+        Closed all day
+      </option>
+
+      <option value="hours">
+        Open / Override hours
+      </option>
+
+      <option value="blocks">
+        Block time
+      </option>
+    </select>
+
+    {ruleKind === "hours" && (
+      <div className="flex gap-2">
+
+        <input
+          type="time"
+          value={ruleOpen}
+          onChange={(event) =>
+            setRuleOpen(
+              event.target.value
+            )
+          }
+          className="border rounded-lg p-3 w-full"
+        />
+
+        <input
+          type="time"
+          value={ruleClose}
+          onChange={(event) =>
+            setRuleClose(
+              event.target.value
+            )
+          }
+          className="border rounded-lg p-3 w-full"
+        />
+
+      </div>
+    )}
+
+  </div>
+
+  {ruleKind === "blocks" && (
+    <div className="mt-4 space-y-2">
+
+      {ruleBlocks.map(
+        (block, index) => (
+          <div
+            key={index}
+            className="flex gap-2"
+          >
+
+            <input
+              type="time"
+              value={
+                block.start
+              }
+              onChange={(
+                event
+              ) => {
+                const next = [
+                  ...ruleBlocks,
+                ];
+
+                next[index] = {
+                  ...next[index],
+
+                  start:
+                    event.target
+                      .value,
+                };
+
+                setRuleBlocks(
+                  next
+                );
+              }}
+              className="border rounded-lg p-3"
+            />
+
+            <input
+              type="time"
+              value={
+                block.end
+              }
+              onChange={(
+                event
+              ) => {
+                const next = [
+                  ...ruleBlocks,
+                ];
+
+                next[index] = {
+                  ...next[index],
+
+                  end:
+                    event.target
+                      .value,
+                };
+
+                setRuleBlocks(
+                  next
+                );
+              }}
+              className="border rounded-lg p-3"
+            />
+
+          </div>
+        )
+      )}
+
+      <button
+        type="button"
+        onClick={() =>
+          setRuleBlocks([
+            ...ruleBlocks,
+
+            {
+              start:
+                "13:00",
+
+              end:
+                "14:00",
+            },
+          ])
+        }
+        className="border px-3 py-2 rounded-lg"
+      >
+        + Add Block
+      </button>
+
+    </div>
+  )}
+
+  <div className="mt-4">
+
+    <button
+      type="button"
+      onClick={addRule}
+      className="bg-black text-white px-4 py-2 rounded-lg"
+    >
+      Save Rule
+    </button>
+
+    {ruleMsg && (
+      <span className="ml-3 text-sm">
+        {ruleMsg}
+      </span>
+    )}
+
+  </div>
+
+  <div className="mt-6">
+
+    <h3 className="font-medium mb-3">
+      This month's rules
+    </h3>
+
+    {rules.map(
+      (rule) => (
+        <div
+          key={rule._id}
+          className="flex justify-between border-b py-2"
         >
-          Book Your Appointment
-        </h1>
 
-        <p className="mt-4 text-gray-600 leading-7 text-sm sm:text-base">
-          Book your beauty services below. Nail appointments are booked
-          separately because they are handled by a different specialist with
-          different working hours.
-        </p>
-      </div>
+          <div>
+            <strong>
+              {rule.date}
+            </strong>
 
-      <div className="space-y-8">
-        <BookingForm
-          title="Hair, Waxing & Coloring"
-          subtitle="Choose from women’s, men’s, waxing, and coloring services."
-          categories={mainCategories}
-          bookingType="regular"
-          hoursLabel="Tue–Sat 11:00–19:00 · Sun 11:00–17:00"
-        />
+            {" — "}
 
-        <BookingForm
-          title="Nail Booking"
+            {rule.kind}
 
-          categories={nailsCategories}
-          bookingType="nails"
+            {rule.kind ===
+              "hours" &&
+              rule.open &&
+              rule.close && (
+                <>
+                  {" "}
+                  ({rule.open} -{" "}
+                  {rule.close})
+                </>
+              )}
+          </div>
 
-        />
-      </div>
-    </section>
-  );
-}
+          <button
+            type="button"
+            onClick={() =>
+              removeRule(
+                rule._id
+              )
+            }
+            className="text-red-600"
+          >
+            Delete
+          </button>
+
+        </div>
+      )
+    )}
+
+  </div>
+
+</section>
