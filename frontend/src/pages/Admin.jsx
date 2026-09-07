@@ -18,74 +18,60 @@ import {
 
 const API =
   (
-    import.meta.env
-      .VITE_API_URL &&
+    import.meta.env.VITE_API_URL &&
     import.meta.env.VITE_API_URL.replace(
       /\/$/,
       ""
     )
-  ) ||
-  "http://localhost:4000";
+  ) || "http://localhost:4000";
 
 /* =====================================================
    SERVICES
 ===================================================== */
 
 const SERVICES = [
-  ...servicesData.women.map(
-    (service) => ({
-      id: service.id,
-      name: service.name,
-      category: "women",
-      bookingType: "regular",
-    })
-  ),
+  ...servicesData.women.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: "women",
+    bookingType: "regular",
+  })),
 
-  ...servicesData.men.map(
-    (service) => ({
-      id: service.id,
-      name: service.name,
-      category: "men",
-      bookingType: "regular",
-    })
-  ),
+  ...servicesData.men.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: "men",
+    bookingType: "regular",
+  })),
 
-  ...servicesData.waxing.map(
-    (service) => ({
-      id: service.id,
-      name: service.name,
-      category: "waxing",
-      bookingType: "regular",
-    })
-  ),
+  ...servicesData.waxing.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: "waxing",
+    bookingType: "regular",
+  })),
 
-  ...servicesData.coloring.map(
-    (service) => ({
-      id: service.id,
-      name: service.name,
-      category: "coloring",
-      bookingType: "regular",
-    })
-  ),
+  ...servicesData.coloring.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: "coloring",
+    bookingType: "regular",
+  })),
 
-  ...servicesData.nails.map(
-    (service) => ({
-      id: service.id,
-      name: service.name,
-      category: "nails",
-      bookingType: "nails",
-    })
-  ),
+  ...servicesData.nails.map((service) => ({
+    id: service.id,
+    name: service.name,
+    category: "nails",
+    bookingType: "nails",
+  })),
 ];
 
 const SERVICE_BY_ID =
   Object.fromEntries(
-    SERVICES.map(
-      (service) => [
-        service.id,
-        service,
-      ]
-    )
+    SERVICES.map((service) => [
+      service.id,
+      service,
+    ])
   );
 
 /* =====================================================
@@ -449,11 +435,20 @@ export default function Admin() {
     setShowMonth,
   ] = useState(false);
 
+  /* =====================================================
+     HOURS
+  ===================================================== */
+
   const [
     hours,
     setHours,
   ] = useState({
     regular: {
+      monday: {
+        open: "",
+        close: "",
+      },
+
       weekday: {
         open: "11:00",
         close: "19:00",
@@ -518,7 +513,9 @@ export default function Admin() {
     setRulesErr,
   ] = useState("");
 
-  /* QUICK BOOKING */
+  /* =====================================================
+     QUICK BOOKING
+  ===================================================== */
 
   const [
     qName,
@@ -562,7 +559,9 @@ export default function Admin() {
     setQMsg,
   ] = useState("");
 
-  /* RULES */
+  /* =====================================================
+     RULES
+  ===================================================== */
 
   const [
     ruleDate,
@@ -706,7 +705,7 @@ export default function Admin() {
     ] || [];
 
   /* =====================================================
-     LOAD DATA
+     LOAD HOURS
   ===================================================== */
 
   async function loadHours() {
@@ -716,7 +715,65 @@ export default function Admin() {
           "/api/admin/hours"
         );
 
-      setHours(data);
+      setHours({
+        regular: {
+          monday: {
+            open:
+              data.regular
+                ?.monday
+                ?.open || "",
+
+            close:
+              data.regular
+                ?.monday
+                ?.close || "",
+          },
+
+          weekday:
+            data.regular
+              ?.weekday || {
+              open: "11:00",
+              close: "19:00",
+            },
+
+          saturday:
+            data.regular
+              ?.saturday || {
+              open: "11:00",
+              close: "19:00",
+            },
+
+          sunday:
+            data.regular
+              ?.sunday || {
+              open: "11:00",
+              close: "17:00",
+            },
+        },
+
+        nails: {
+          weekday:
+            data.nails
+              ?.weekday || {
+              open: "16:30",
+              close: "19:00",
+            },
+
+          saturday:
+            data.nails
+              ?.saturday || {
+              open: "16:30",
+              close: "19:00",
+            },
+
+          sunday:
+            data.nails
+              ?.sunday || {
+              open: "11:00",
+              close: "17:00",
+            },
+        },
+      });
     } catch {
       // ignore
     }
@@ -868,7 +925,7 @@ export default function Admin() {
   ]);
 
   /* =====================================================
-     HOURS
+     SAVE HOURS
   ===================================================== */
 
   async function saveHours() {
@@ -890,6 +947,8 @@ export default function Admin() {
       setHoursMsg(
         "Saved ✔"
       );
+
+      await loadAvailability();
 
       setTimeout(
         () =>
@@ -931,8 +990,11 @@ export default function Admin() {
         ];
 
       const body = {
-        name: qName,
-        phone: qPhone,
+        name:
+          qName,
+
+        phone:
+          qPhone,
 
         serviceId:
           qServiceId,
@@ -949,8 +1011,11 @@ export default function Admin() {
           service?.bookingType ||
           "regular",
 
-        date: qDate,
-        time: qTime,
+        date:
+          qDate,
+
+        time:
+          qTime,
       };
 
       if (qEmail) {
@@ -1011,7 +1076,8 @@ export default function Admin() {
       await authFetch(
         `/api/admin/bookings/${booking._id}/cancel`,
         {
-          method: "PATCH",
+          method:
+            "PATCH",
         }
       );
 
@@ -1029,7 +1095,7 @@ export default function Admin() {
   }
 
   /* =====================================================
-     RULES
+     SPECIAL RULES
   ===================================================== */
 
   async function addRule() {
@@ -1037,7 +1103,8 @@ export default function Admin() {
       setRuleMsg("");
 
       if (
-        ruleKind === "hours" &&
+        ruleKind ===
+          "hours" &&
         (
           !ruleOpen ||
           !ruleClose
@@ -1118,7 +1185,8 @@ export default function Admin() {
       await authFetch(
         `/api/admin/rules/${id}`,
         {
-          method: "DELETE",
+          method:
+            "DELETE",
         }
       );
 
@@ -1133,7 +1201,7 @@ export default function Admin() {
   }
 
   /* =====================================================
-     BOOKING CARDS MOBILE
+     BOOKING CARDS
   ===================================================== */
 
   function BookingCards({
@@ -1161,79 +1229,56 @@ export default function Admin() {
                 key={
                   booking._id
                 }
-                className={`rounded-xl border bg-white p-3 sm:p-4 shadow-sm ${
+                className={`rounded-xl border bg-white p-4 shadow-sm ${
                   cancelled
                     ? "opacity-60"
                     : ""
                 }`}
               >
 
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex justify-between gap-3">
 
                   <div>
 
                     <div className="font-medium">
                       {booking.time}
                       {" – "}
-                      {
-                        booking.endTime
-                      }
+                      {booking.endTime}
                     </div>
 
                     <div className="font-medium mt-1">
-                      {
-                        booking.name
-                      }
+                      {booking.name}
                     </div>
 
                     <div className="text-sm text-gray-600">
-                      {
-                        booking.serviceName
-                      }
+                      {booking.serviceName}
                     </div>
 
-                  </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      {booking.phone}
+                    </div>
 
-                  <div className="flex flex-wrap gap-1 justify-end">
-
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-gray-900 text-white">
-                      {
-                        booking.serviceCategory
-                      }
-                    </span>
-
-                    {booking.bookingType ===
-                      "nails" && (
-                      <span className="text-[10px] px-2 py-1 rounded-full bg-pink-100 text-pink-700">
-                        nails
-                      </span>
-                    )}
-
-                    {cancelled && (
-                      <span className="text-[10px] px-2 py-1 rounded-full bg-red-100 text-red-700">
-                        Cancelled
-                      </span>
+                    {booking.email && (
+                      <div className="text-xs text-gray-500">
+                        {booking.email}
+                      </div>
                     )}
 
                   </div>
-
-                </div>
-
-                <div className="mt-2 text-xs text-gray-500">
 
                   <div>
-                    {
-                      booking.phone
-                    }
-                  </div>
 
-                  {booking.email && (
-                    <div>
-                      {
-                        booking.email
-                      }
-                    </div>
-                  )}
+                    {cancelled ? (
+                      <span className="text-xs text-red-600">
+                        Cancelled
+                      </span>
+                    ) : (
+                      <span className="text-xs text-green-700">
+                        Confirmed
+                      </span>
+                    )}
+
+                  </div>
 
                 </div>
 
@@ -1245,7 +1290,7 @@ export default function Admin() {
                         booking
                       )
                     }
-                    className="mt-3 border border-red-600 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+                    className="mt-3 border border-red-600 text-red-600 px-3 py-2 rounded-lg text-sm"
                   >
                     Cancel Appointment
                   </button>
@@ -1261,7 +1306,7 @@ export default function Admin() {
   }
 
   /* =====================================================
-     BOOKING TABLE DESKTOP
+     BOOKING TABLE
   ===================================================== */
 
   function BookingTable({
@@ -1333,44 +1378,30 @@ export default function Admin() {
                   >
 
                     <td className="py-2 pr-4">
-                      {
-                        booking.time
-                      }
+                      {booking.time}
                       {" – "}
-                      {
-                        booking.endTime
-                      }
+                      {booking.endTime}
                     </td>
 
                     <td className="py-2 pr-4">
-                      {
-                        booking.name
-                      }
+                      {booking.name}
                     </td>
 
                     <td className="py-2 pr-4">
-                      {
-                        booking.serviceCategory
-                      }
+                      {booking.serviceCategory}
                       {" / "}
-                      {
-                        booking.serviceName
-                      }
+                      {booking.serviceName}
                     </td>
 
                     <td className="py-2 pr-4">
 
                       <div>
-                        {
-                          booking.phone
-                        }
+                        {booking.phone}
                       </div>
 
                       {booking.email && (
                         <div className="text-gray-500">
-                          {
-                            booking.email
-                          }
+                          {booking.email}
                         </div>
                       )}
 
@@ -1379,11 +1410,11 @@ export default function Admin() {
                     <td className="py-2 pr-4">
 
                       {cancelled ? (
-                        <span className="font-medium text-red-600">
+                        <span className="text-red-600">
                           Cancelled
                         </span>
                       ) : (
-                        <span className="font-medium text-green-700">
+                        <span className="text-green-700">
                           Confirmed
                         </span>
                       )}
@@ -1400,7 +1431,7 @@ export default function Admin() {
                               booking
                             )
                           }
-                          className="border border-red-600 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
+                          className="border border-red-600 text-red-600 px-3 py-1.5 rounded-lg"
                         >
                           Cancel
                         </button>
@@ -1454,11 +1485,25 @@ export default function Admin() {
         `${ymd}T00:00:00`
       ).getDay() === 1;
 
-    const mondayOpened =
+    const regularMondayOpen =
+      Boolean(
+        hours.regular
+          ?.monday
+          ?.open &&
+        hours.regular
+          ?.monday
+          ?.close
+      );
+
+    const specialHoursOpen =
       Boolean(
         info.hours?.open &&
         info.hours?.close
       );
+
+    const mondayOpened =
+      regularMondayOpen ||
+      specialHoursOpen;
 
     const closed =
       info.isClosed ||
@@ -1512,9 +1557,7 @@ export default function Admin() {
             ? "Closed"
             : activeBookings.length
             ? `${activeBookings.length} bookings`
-            : mondayOpened
-            ? "Open"
-            : "—"}
+            : "Open"}
 
         </div>
 
@@ -1562,11 +1605,25 @@ export default function Admin() {
     const isMonday =
       dateObj.getDay() === 1;
 
-    const mondayOpened =
+    const regularMondayOpen =
+      Boolean(
+        hours.regular
+          ?.monday
+          ?.open &&
+        hours.regular
+          ?.monday
+          ?.close
+      );
+
+    const specialHoursOpen =
       Boolean(
         info.hours?.open &&
         info.hours?.close
       );
+
+    const mondayOpened =
+      regularMondayOpen ||
+      specialHoursOpen;
 
     const closed =
       info.isClosed ||
@@ -1622,7 +1679,8 @@ export default function Admin() {
           </span>
         )}
 
-        {mondayOpened &&
+        {isMonday &&
+          mondayOpened &&
           !info.isClosed && (
           <span className="absolute bottom-1 left-1 text-[10px] bg-green-700 text-white rounded px-1">
             open
@@ -1632,9 +1690,7 @@ export default function Admin() {
         {activeBookings.length >
           0 && (
           <span className="absolute bottom-1 right-1 text-[10px] bg-gray-900 text-white rounded-full px-2">
-            {
-              activeBookings.length
-            }
+            {activeBookings.length}
           </span>
         )}
 
@@ -1873,9 +1929,7 @@ export default function Admin() {
                 </button>
 
                 <div className="font-medium ml-3">
-                  {
-                    monthLabel
-                  }
+                  {monthLabel}
                 </div>
 
                 <button
@@ -1901,17 +1955,13 @@ export default function Admin() {
 
               {bookingsErr && (
                 <p className="text-sm text-red-600">
-                  {
-                    bookingsErr
-                  }
+                  {bookingsErr}
                 </p>
               )}
 
               {rulesErr && (
                 <p className="text-sm text-red-600">
-                  {
-                    rulesErr
-                  }
+                  {rulesErr}
                 </p>
               )}
 
@@ -1988,13 +2038,13 @@ export default function Admin() {
         <section className="bg-white rounded-xl shadow p-5">
 
           <h2 className="font-semibold text-lg mb-2">
-            Special Hours, Monday Opening & Closures
+            Special Hours & Closures
           </h2>
 
           <p className="text-sm text-gray-600 mb-4">
-            Monday is closed by default. To open a specific Monday,
-            choose the date, select Open / Override hours, choose the
-            opening and closing times, then save the rule.
+            Use this section to close one specific date,
+            override the normal hours for a date,
+            or block part of a day.
           </p>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -2033,7 +2083,7 @@ export default function Admin() {
               </option>
 
               <option value="hours">
-                Open / Override hours
+                Override hours
               </option>
 
               <option value="blocks">
@@ -2095,9 +2145,7 @@ export default function Admin() {
                 ) => (
 
                   <div
-                    key={
-                      index
-                    }
+                    key={index}
                     className="flex gap-2"
                   >
 
@@ -2113,9 +2161,7 @@ export default function Admin() {
                           ...ruleBlocks,
                         ];
 
-                        next[
-                          index
-                        ] = {
+                        next[index] = {
                           ...next[
                             index
                           ],
@@ -2143,9 +2189,7 @@ export default function Admin() {
                           ...ruleBlocks,
                         ];
 
-                        next[
-                          index
-                        ] = {
+                        next[index] = {
                           ...next[
                             index
                           ],
@@ -2204,9 +2248,7 @@ export default function Admin() {
 
             {ruleMsg && (
               <span className="ml-3 text-sm">
-                {
-                  ruleMsg
-                }
+                {ruleMsg}
               </span>
             )}
 
@@ -2237,9 +2279,7 @@ export default function Admin() {
                   <div>
 
                     <strong>
-                      {
-                        rule.date
-                      }
+                      {rule.date}
                     </strong>
 
                     {" — "}
@@ -2247,7 +2287,6 @@ export default function Admin() {
                     {rule.kind ===
                     "hours" ? (
                       <>
-                        Open{" "}
                         {rule.open}
                         {" - "}
                         {rule.close}
@@ -2286,7 +2325,7 @@ export default function Admin() {
 
         </section>
 
-        {/* HOURS */}
+        {/* BOOKING HOURS */}
 
         <section className="bg-white rounded-xl shadow p-5">
 
@@ -2295,8 +2334,9 @@ export default function Admin() {
           </h2>
 
           <p className="text-sm text-gray-600 mb-5">
-            Monday is closed by default and is managed using
-            Special Hours above.
+            Monday hours below apply to the Regular Salon.
+            Leave both Monday fields blank to keep the regular
+            salon closed on Mondays.
           </p>
 
           {[
@@ -2313,161 +2353,190 @@ export default function Admin() {
             ([
               label,
               type,
-            ]) => (
+            ]) => {
 
-              <div
-                key={
-                  type
-                }
-                className="mb-6"
-              >
+              const dayOptions =
+                type ===
+                "regular"
+                  ? [
+                      [
+                        "Monday",
+                        "monday",
+                      ],
 
-                <h3 className="font-medium mb-3">
-                  {label}
-                </h3>
+                      [
+                        "Tue–Fri",
+                        "weekday",
+                      ],
 
-                <div className="grid gap-3 sm:grid-cols-3">
+                      [
+                        "Saturday",
+                        "saturday",
+                      ],
 
-                  {[
-                   [
-  "Monday",
-  "monday",
-],
-[
-  "Tue–Fri",
-  "weekday",
-],
-[
-  "Saturday",
-  "saturday",
-],
-[
-  "Sunday",
-  "sunday",
-],
-                  ].map(
-                    ([
-                      dayLabel,
-                      key,
-                    ]) => (
+                      [
+                        "Sunday",
+                        "sunday",
+                      ],
+                    ]
+                  : [
+                      [
+                        "Tue–Fri",
+                        "weekday",
+                      ],
 
-                      <div
-                        key={
-                          key
-                        }
-                        className="border rounded-lg p-3"
-                      >
+                      [
+                        "Saturday",
+                        "saturday",
+                      ],
 
-                        <div className="font-medium mb-2">
-                          {
-                            dayLabel
+                      [
+                        "Sunday",
+                        "sunday",
+                      ],
+                    ];
+
+              return (
+                <div
+                  key={
+                    type
+                  }
+                  className="mb-6"
+                >
+
+                  <h3 className="font-medium mb-3">
+                    {label}
+                  </h3>
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                    {dayOptions.map(
+                      ([
+                        dayLabel,
+                        key,
+                      ]) => (
+
+                        <div
+                          key={
+                            key
                           }
-                        </div>
+                          className="border rounded-lg p-3"
+                        >
 
-                        <div className="flex gap-2">
+                          <div className="font-medium mb-2">
+                            {dayLabel}
+                          </div>
 
-                          <input
-                            type="time"
-                            value={
-                              hours[
-                                type
-                              ]?.[
-                                key
-                              ]?.open ||
-                              ""
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              setHours(
-                                (
-                                  current
-                                ) => ({
-                                  ...current,
+                          <div className="flex gap-2">
 
-                                  [
-                                    type
-                                  ]: {
-                                    ...current[
-                                      type
-                                    ],
+                            <input
+                              type="time"
+                              value={
+                                hours[
+                                  type
+                                ]?.[
+                                  key
+                                ]?.open ||
+                                ""
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                setHours(
+                                  (
+                                    current
+                                  ) => ({
+                                    ...current,
 
                                     [
-                                      key
+                                      type
                                     ]: {
                                       ...current[
                                         type
-                                      ][
-                                        key
                                       ],
 
-                                      open:
-                                        event.target.value,
+                                      [
+                                        key
+                                      ]: {
+                                        ...(
+                                          current[
+                                            type
+                                          ]?.[
+                                            key
+                                          ] ||
+                                          {}
+                                        ),
+
+                                        open:
+                                          event.target.value,
+                                      },
                                     },
-                                  },
-                                })
-                              )
-                            }
-                            className="border rounded-lg p-2 w-full"
-                          />
+                                  })
+                                )
+                              }
+                              className="border rounded-lg p-2 w-full"
+                            />
 
-                          <input
-                            type="time"
-                            value={
-                              hours[
-                                type
-                              ]?.[
-                                key
-                              ]?.close ||
-                              ""
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              setHours(
-                                (
-                                  current
-                                ) => ({
-                                  ...current,
-
-                                  [
-                                    type
-                                  ]: {
-                                    ...current[
-                                      type
-                                    ],
+                            <input
+                              type="time"
+                              value={
+                                hours[
+                                  type
+                                ]?.[
+                                  key
+                                ]?.close ||
+                                ""
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                setHours(
+                                  (
+                                    current
+                                  ) => ({
+                                    ...current,
 
                                     [
-                                      key
+                                      type
                                     ]: {
                                       ...current[
                                         type
-                                      ][
-                                        key
                                       ],
 
-                                      close:
-                                        event.target.value,
+                                      [
+                                        key
+                                      ]: {
+                                        ...(
+                                          current[
+                                            type
+                                          ]?.[
+                                            key
+                                          ] ||
+                                          {}
+                                        ),
+
+                                        close:
+                                          event.target.value,
+                                      },
                                     },
-                                  },
-                                })
-                              )
-                            }
-                            className="border rounded-lg p-2 w-full"
-                          />
+                                  })
+                                )
+                              }
+                              className="border rounded-lg p-2 w-full"
+                            />
+
+                          </div>
 
                         </div>
 
-                      </div>
+                      )
+                    )}
 
-                    )
-                  )}
+                  </div>
 
                 </div>
-
-              </div>
-
-            )
+              );
+            }
           )}
 
           <button
@@ -2482,9 +2551,7 @@ export default function Admin() {
 
           {hoursMsg && (
             <span className="ml-3 text-sm">
-              {
-                hoursMsg
-              }
+              {hoursMsg}
             </span>
           )}
 
@@ -2570,13 +2637,9 @@ export default function Admin() {
                       service.id
                     }
                   >
-                    {
-                      service.name
-                    }
+                    {service.name}
                     {" — "}
-                    {
-                      service.category
-                    }
+                    {service.category}
                   </option>
                 )
               )}
@@ -2628,9 +2691,7 @@ export default function Admin() {
                       slot
                     }
                   >
-                    {
-                      slot
-                    }
+                    {slot}
                   </option>
                 )
               )}
@@ -2653,9 +2714,7 @@ export default function Admin() {
 
             {qMsg && (
               <span className="ml-3 text-sm">
-                {
-                  qMsg
-                }
+                {qMsg}
               </span>
             )}
 
