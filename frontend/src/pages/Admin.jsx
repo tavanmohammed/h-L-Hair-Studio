@@ -37,8 +37,7 @@ const SERVICES = [
       id: service.id,
       name: service.name,
       category: "women",
-      bookingType:
-        "regular",
+      bookingType: "regular",
     })
   ),
 
@@ -47,8 +46,7 @@ const SERVICES = [
       id: service.id,
       name: service.name,
       category: "men",
-      bookingType:
-        "regular",
+      bookingType: "regular",
     })
   ),
 
@@ -57,8 +55,7 @@ const SERVICES = [
       id: service.id,
       name: service.name,
       category: "waxing",
-      bookingType:
-        "regular",
+      bookingType: "regular",
     })
   ),
 
@@ -67,8 +64,7 @@ const SERVICES = [
       id: service.id,
       name: service.name,
       category: "coloring",
-      bookingType:
-        "regular",
+      bookingType: "regular",
     })
   ),
 
@@ -77,8 +73,7 @@ const SERVICES = [
       id: service.id,
       name: service.name,
       category: "nails",
-      bookingType:
-        "nails",
+      bookingType: "nails",
     })
   ),
 ];
@@ -125,9 +120,10 @@ function addDays(
   ymd,
   amount
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setDate(
     date.getDate() +
@@ -142,9 +138,10 @@ function addDays(
 function startOfWeekYMD(
   ymd
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setDate(
     date.getDate() -
@@ -175,9 +172,10 @@ function weekDays(
 function monthStartYMD(
   ymd
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setDate(1);
 
@@ -189,9 +187,10 @@ function monthStartYMD(
 function endOfMonthYMD(
   ymd
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setMonth(
     date.getMonth() + 1,
@@ -206,9 +205,10 @@ function endOfMonthYMD(
 function prevMonth(
   ymd
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setMonth(
     date.getMonth() - 1
@@ -222,9 +222,10 @@ function prevMonth(
 function nextMonth(
   ymd
 ) {
-  const date = new Date(
-    `${ymd}T00:00:00`
-  );
+  const date =
+    new Date(
+      `${ymd}T00:00:00`
+    );
 
   date.setMonth(
     date.getMonth() + 1
@@ -404,10 +405,11 @@ export default function Admin() {
   const authFetch =
     useAuthFetch();
 
-  const today = useMemo(
-    () => todayYMD(),
-    []
-  );
+  const today =
+    useMemo(
+      () => todayYMD(),
+      []
+    );
 
   const tomorrow =
     useMemo(
@@ -428,14 +430,18 @@ export default function Admin() {
     weekStart,
     setWeekStart,
   ] = useState(
-    startOfWeekYMD(today)
+    startOfWeekYMD(
+      today
+    )
   );
 
   const [
     monthAnchor,
     setMonthAnchor,
   ] = useState(
-    monthStartYMD(today)
+    monthStartYMD(
+      today
+    )
   );
 
   const [
@@ -625,13 +631,14 @@ export default function Admin() {
       weekStart
     );
 
-  const grid = useMemo(
-    () =>
-      monthGrid(
-        monthAnchor
-      ),
-    [monthAnchor]
-  );
+  const grid =
+    useMemo(
+      () =>
+        monthGrid(
+          monthAnchor
+        ),
+      [monthAnchor]
+    );
 
   const monthLabel =
     useMemo(() => {
@@ -803,7 +810,6 @@ export default function Admin() {
 
   async function loadAvailability() {
     setQSlots([]);
-
     setQTime("");
 
     try {
@@ -887,9 +893,7 @@ export default function Admin() {
 
       setTimeout(
         () =>
-          setHoursMsg(
-            ""
-          ),
+          setHoursMsg(""),
         1500
       );
     } catch (error) {
@@ -927,11 +931,8 @@ export default function Admin() {
         ];
 
       const body = {
-        name:
-          qName,
-
-        phone:
-          qPhone,
+        name: qName,
+        phone: qPhone,
 
         serviceId:
           qServiceId,
@@ -948,11 +949,8 @@ export default function Admin() {
           service?.bookingType ||
           "regular",
 
-        date:
-          qDate,
-
-        time:
-          qTime,
+        date: qDate,
+        time: qTime,
       };
 
       if (qEmail) {
@@ -1013,8 +1011,7 @@ export default function Admin() {
       await authFetch(
         `/api/admin/bookings/${booking._id}/cancel`,
         {
-          method:
-            "PATCH",
+          method: "PATCH",
         }
       );
 
@@ -1038,6 +1035,20 @@ export default function Admin() {
   async function addRule() {
     try {
       setRuleMsg("");
+
+      if (
+        ruleKind === "hours" &&
+        (
+          !ruleOpen ||
+          !ruleClose
+        )
+      ) {
+        setRuleMsg(
+          "Choose opening and closing times."
+        );
+
+        return;
+      }
 
       const body = {
         date:
@@ -1090,9 +1101,7 @@ export default function Admin() {
 
       setTimeout(
         () =>
-          setRuleMsg(
-            ""
-          ),
+          setRuleMsg(""),
         1500
       );
     } catch (error) {
@@ -1109,8 +1118,7 @@ export default function Admin() {
       await authFetch(
         `/api/admin/rules/${id}`,
         {
-          method:
-            "DELETE",
+          method: "DELETE",
         }
       );
 
@@ -1141,6 +1149,7 @@ export default function Admin() {
 
     return (
       <div className="space-y-3">
+
         {rows.map(
           (booking) => {
             const cancelled =
@@ -1158,12 +1167,14 @@ export default function Admin() {
                     : ""
                 }`}
               >
+
                 <div className="flex items-start justify-between gap-2">
 
                   <div>
+
                     <div className="font-medium">
                       {booking.time}
-                      –
+                      {" – "}
                       {
                         booking.endTime
                       }
@@ -1180,6 +1191,7 @@ export default function Admin() {
                         booking.serviceName
                       }
                     </div>
+
                   </div>
 
                   <div className="flex flex-wrap gap-1 justify-end">
@@ -1204,9 +1216,11 @@ export default function Admin() {
                     )}
 
                   </div>
+
                 </div>
 
                 <div className="mt-2 text-xs text-gray-500">
+
                   <div>
                     {
                       booking.phone
@@ -1220,6 +1234,7 @@ export default function Admin() {
                       }
                     </div>
                   )}
+
                 </div>
 
                 {!cancelled && (
@@ -1235,10 +1250,12 @@ export default function Admin() {
                     Cancel Appointment
                   </button>
                 )}
+
               </div>
             );
           }
         )}
+
       </div>
     );
   }
@@ -1260,9 +1277,11 @@ export default function Admin() {
 
     return (
       <div className="overflow-x-auto">
+
         <table className="w-full text-sm">
 
           <thead>
+
             <tr className="text-left border-b">
 
               <th className="py-2 pr-4">
@@ -1290,9 +1309,11 @@ export default function Admin() {
               </th>
 
             </tr>
+
           </thead>
 
           <tbody>
+
             {rows.map(
               (booking) => {
                 const cancelled =
@@ -1315,7 +1336,7 @@ export default function Admin() {
                       {
                         booking.time
                       }
-                      –
+                      {" – "}
                       {
                         booking.endTime
                       }
@@ -1338,6 +1359,7 @@ export default function Admin() {
                     </td>
 
                     <td className="py-2 pr-4">
+
                       <div>
                         {
                           booking.phone
@@ -1351,6 +1373,7 @@ export default function Admin() {
                           }
                         </div>
                       )}
+
                     </td>
 
                     <td className="py-2 pr-4">
@@ -1389,9 +1412,11 @@ export default function Admin() {
                 );
               }
             )}
+
           </tbody>
 
         </table>
+
       </div>
     );
   }
@@ -1404,7 +1429,8 @@ export default function Admin() {
     ymd,
   }) {
     const selected =
-      ymd === selectedDay;
+      ymd ===
+      selectedDay;
 
     const activeBookings =
       (
@@ -1421,6 +1447,24 @@ export default function Admin() {
       dayRuleSummary(
         rules,
         ymd
+      );
+
+    const isMonday =
+      new Date(
+        `${ymd}T00:00:00`
+      ).getDay() === 1;
+
+    const mondayOpened =
+      Boolean(
+        info.hours?.open &&
+        info.hours?.close
+      );
+
+    const closed =
+      info.isClosed ||
+      (
+        isMonday &&
+        !mondayOpened
       );
 
     return (
@@ -1442,6 +1486,7 @@ export default function Admin() {
       >
 
         <div className="font-medium">
+
           {new Date(
             `${ymd}T00:00:00`
           ).toLocaleDateString(
@@ -1451,19 +1496,24 @@ export default function Admin() {
                 "short",
             }
           )}
+
           {" "}
+
           {ymd.slice(
             8,
             10
           )}
+
         </div>
 
         <div className="text-[11px]">
 
-          {info.isClosed
+          {closed
             ? "Closed"
             : activeBookings.length
             ? `${activeBookings.length} bookings`
+            : mondayOpened
+            ? "Open"
             : "—"}
 
         </div>
@@ -1501,7 +1551,29 @@ export default function Admin() {
       selectedDay;
 
     const isToday =
-      cell.ymd === today;
+      cell.ymd ===
+      today;
+
+    const dateObj =
+      new Date(
+        `${cell.ymd}T00:00:00`
+      );
+
+    const isMonday =
+      dateObj.getDay() === 1;
+
+    const mondayOpened =
+      Boolean(
+        info.hours?.open &&
+        info.hours?.close
+      );
+
+    const closed =
+      info.isClosed ||
+      (
+        isMonday &&
+        !mondayOpened
+      );
 
     return (
       <button
@@ -1525,7 +1597,7 @@ export default function Admin() {
             ? "ring-2 ring-black"
             : "",
 
-          info.isClosed
+          closed
             ? "opacity-60"
             : "",
         ].join(" ")}
@@ -1544,9 +1616,16 @@ export default function Admin() {
           </span>
         )}
 
-        {info.isClosed && (
+        {closed && (
           <span className="absolute bottom-1 left-1 text-[10px] bg-red-600 text-white rounded px-1">
             closed
+          </span>
+        )}
+
+        {mondayOpened &&
+          !info.isClosed && (
+          <span className="absolute bottom-1 left-1 text-[10px] bg-green-700 text-white rounded px-1">
+            open
           </span>
         )}
 
@@ -1651,19 +1730,23 @@ export default function Admin() {
               </h3>
 
               <div className="md:hidden">
+
                 <BookingCards
                   rows={
                     todaysList
                   }
                 />
+
               </div>
 
               <div className="hidden md:block">
+
                 <BookingTable
                   rows={
                     todaysList
                   }
                 />
+
               </div>
 
             </div>
@@ -1675,19 +1758,23 @@ export default function Admin() {
               </h3>
 
               <div className="md:hidden">
+
                 <BookingCards
                   rows={
                     tomorrowsList
                   }
                 />
+
               </div>
 
               <div className="hidden md:block">
+
                 <BookingTable
                   rows={
                     tomorrowsList
                   }
                 />
+
               </div>
 
             </div>
@@ -1739,18 +1826,16 @@ export default function Admin() {
           <div className="overflow-x-auto mb-4">
 
             <div className="flex">
+
               {days.map(
                 (day) => (
                   <DayChip
-                    key={
-                      day
-                    }
-                    ymd={
-                      day
-                    }
+                    key={day}
+                    ymd={day}
                   />
                 )
               )}
+
             </div>
 
           </div>
@@ -1843,13 +1928,9 @@ export default function Admin() {
                 ].map(
                   (day) => (
                     <div
-                      key={
-                        day
-                      }
+                      key={day}
                     >
-                      {
-                        day
-                      }
+                      {day}
                     </div>
                   )
                 )}
@@ -1881,19 +1962,23 @@ export default function Admin() {
           </h3>
 
           <div className="md:hidden">
+
             <BookingCards
               rows={
                 selectedList
               }
             />
+
           </div>
 
           <div className="hidden md:block">
+
             <BookingTable
               rows={
                 selectedList
               }
             />
+
           </div>
 
         </section>
@@ -1902,9 +1987,15 @@ export default function Admin() {
 
         <section className="bg-white rounded-xl shadow p-5">
 
-          <h2 className="font-semibold text-lg mb-4">
-            Special Hours & Closures
+          <h2 className="font-semibold text-lg mb-2">
+            Special Hours, Monday Opening & Closures
           </h2>
+
+          <p className="text-sm text-gray-600 mb-4">
+            Monday is closed by default. To open a specific Monday,
+            choose the date, select Open / Override hours, choose the
+            opening and closing times, then save the rule.
+          </p>
 
           <div className="grid gap-3 md:grid-cols-3">
 
@@ -1917,8 +2008,7 @@ export default function Admin() {
                 event
               ) =>
                 setRuleDate(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
@@ -1932,27 +2022,29 @@ export default function Admin() {
                 event
               ) =>
                 setRuleKind(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
             >
+
               <option value="closed">
                 Closed all day
               </option>
 
               <option value="hours">
-                Override hours
+                Open / Override hours
               </option>
 
               <option value="blocks">
                 Block time
               </option>
+
             </select>
 
             {ruleKind ===
               "hours" && (
+
               <div className="flex gap-2">
 
                 <input
@@ -1964,12 +2056,10 @@ export default function Admin() {
                     event
                   ) =>
                     setRuleOpen(
-                      event
-                        .target
-                        .value
+                      event.target.value
                     )
                   }
-                  className="border rounded-lg p-3"
+                  className="border rounded-lg p-3 w-full"
                 />
 
                 <input
@@ -1981,21 +2071,21 @@ export default function Admin() {
                     event
                   ) =>
                     setRuleClose(
-                      event
-                        .target
-                        .value
+                      event.target.value
                     )
                   }
-                  className="border rounded-lg p-3"
+                  className="border rounded-lg p-3 w-full"
                 />
 
               </div>
+
             )}
 
           </div>
 
           {ruleKind ===
             "blocks" && (
+
             <div className="mt-4 space-y-2">
 
               {ruleBlocks.map(
@@ -2003,6 +2093,7 @@ export default function Admin() {
                   block,
                   index
                 ) => (
+
                   <div
                     key={
                       index
@@ -2018,10 +2109,9 @@ export default function Admin() {
                       onChange={(
                         event
                       ) => {
-                        const next =
-                          [
-                            ...ruleBlocks,
-                          ];
+                        const next = [
+                          ...ruleBlocks,
+                        ];
 
                         next[
                           index
@@ -2031,9 +2121,7 @@ export default function Admin() {
                           ],
 
                           start:
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                         };
 
                         setRuleBlocks(
@@ -2051,10 +2139,9 @@ export default function Admin() {
                       onChange={(
                         event
                       ) => {
-                        const next =
-                          [
-                            ...ruleBlocks,
-                          ];
+                        const next = [
+                          ...ruleBlocks,
+                        ];
 
                         next[
                           index
@@ -2064,9 +2151,7 @@ export default function Admin() {
                           ],
 
                           end:
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                         };
 
                         setRuleBlocks(
@@ -2077,10 +2162,12 @@ export default function Admin() {
                     />
 
                   </div>
+
                 )
               )}
 
               <button
+                type="button"
                 onClick={() =>
                   setRuleBlocks([
                     ...ruleBlocks,
@@ -2100,11 +2187,13 @@ export default function Admin() {
               </button>
 
             </div>
+
           )}
 
           <div className="mt-4">
 
             <button
+              type="button"
               onClick={
                 addRule
               }
@@ -2129,16 +2218,24 @@ export default function Admin() {
               This month's rules
             </h3>
 
+            {rules.length === 0 && (
+              <p className="text-sm text-gray-500">
+                No special rules this month.
+              </p>
+            )}
+
             {rules.map(
               (rule) => (
+
                 <div
                   key={
                     rule._id
                   }
-                  className="flex justify-between border-b py-2"
+                  className="flex justify-between gap-3 border-b py-2"
                 >
 
                   <div>
+
                     <strong>
                       {
                         rule.date
@@ -2147,12 +2244,29 @@ export default function Admin() {
 
                     {" — "}
 
-                    {
-                      rule.kind
-                    }
+                    {rule.kind ===
+                    "hours" ? (
+                      <>
+                        Open{" "}
+                        {rule.open}
+                        {" - "}
+                        {rule.close}
+                      </>
+                    ) : rule.kind ===
+                      "closed" ? (
+                      <>
+                        Closed all day
+                      </>
+                    ) : (
+                      <>
+                        Blocked time
+                      </>
+                    )}
+
                   </div>
 
                   <button
+                    type="button"
                     onClick={() =>
                       removeRule(
                         rule._id
@@ -2164,6 +2278,7 @@ export default function Admin() {
                   </button>
 
                 </div>
+
               )
             )}
 
@@ -2175,9 +2290,14 @@ export default function Admin() {
 
         <section className="bg-white rounded-xl shadow p-5">
 
-          <h2 className="font-semibold text-lg mb-4">
+          <h2 className="font-semibold text-lg mb-2">
             Booking Hours
           </h2>
+
+          <p className="text-sm text-gray-600 mb-5">
+            Monday is closed by default and is managed using
+            Special Hours above.
+          </p>
 
           {[
             [
@@ -2194,6 +2314,7 @@ export default function Admin() {
               label,
               type,
             ]) => (
+
               <div
                 key={
                   type
@@ -2227,6 +2348,7 @@ export default function Admin() {
                       dayLabel,
                       key,
                     ]) => (
+
                       <div
                         key={
                           key
@@ -2278,9 +2400,7 @@ export default function Admin() {
                                       ],
 
                                       open:
-                                        event
-                                          .target
-                                          .value,
+                                        event.target.value,
                                     },
                                   },
                                 })
@@ -2325,9 +2445,7 @@ export default function Admin() {
                                       ],
 
                                       close:
-                                        event
-                                          .target
-                                          .value,
+                                        event.target.value,
                                     },
                                   },
                                 })
@@ -2339,16 +2457,19 @@ export default function Admin() {
                         </div>
 
                       </div>
+
                     )
                   )}
 
                 </div>
 
               </div>
+
             )
           )}
 
           <button
+            type="button"
             onClick={
               saveHours
             }
@@ -2386,8 +2507,7 @@ export default function Admin() {
                 event
               ) =>
                 setQName(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
@@ -2402,8 +2522,7 @@ export default function Admin() {
                 event
               ) =>
                 setQPhone(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
@@ -2419,8 +2538,7 @@ export default function Admin() {
                 event
               ) =>
                 setQEmail(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3 sm:col-span-2"
@@ -2434,8 +2552,7 @@ export default function Admin() {
                 event
               ) =>
                 setQServiceId(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3 sm:col-span-2"
@@ -2473,8 +2590,7 @@ export default function Admin() {
                 event
               ) =>
                 setQDate(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
@@ -2488,14 +2604,16 @@ export default function Admin() {
                 event
               ) =>
                 setQTime(
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
               className="border rounded-lg p-3"
             >
+
               <option value="">
-                Select time
+                {qSlots.length
+                  ? "Select time"
+                  : "No available times"}
               </option>
 
               {qSlots.map(
@@ -2522,6 +2640,7 @@ export default function Admin() {
           <div className="mt-4">
 
             <button
+              type="button"
               onClick={
                 createBooking
               }
