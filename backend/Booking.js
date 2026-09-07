@@ -40,8 +40,6 @@ const BookingSchema = new mongoose.Schema(
       required: true,
     },
 
-    // IMPORTANT:
-    // This was missing before.
     bookingType: {
       type: String,
       enum: ["regular", "nails"],
