@@ -689,7 +689,7 @@ export default function Booking() {
                                 service.price !==
                                 undefined ? (
                                   <p className="text-lg font-semibold text-[#3f3f3f]">
-                                    $
+                                    
                                     {
                                       service.price
                                     }
