@@ -193,15 +193,21 @@ function getHoursForDate(
 
   const day = d.getDay();
 
-  // Monday closed
-  if (day === 1) {
-    return null;
-  }
-
   const group =
     bookingType === "nails"
       ? HOURS.nails
       : HOURS.regular;
+
+  // Monday is normally closed.
+  // Special admin hours can still open
+  // a specific Monday.
+  if (day === 1) {
+    return {
+      open: "",
+      close: "",
+      closedByDefault: true,
+    };
+  }
 
   if (day === 0) {
     return group.sunday;
