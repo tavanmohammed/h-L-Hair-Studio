@@ -4,9 +4,7 @@ import React, {
   useState,
 } from "react";
 
-import {
-  useNavigate,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import {
   servicesData,
@@ -19,10 +17,7 @@ import {
 const API =
   (
     import.meta.env.VITE_API_URL &&
-    import.meta.env.VITE_API_URL.replace(
-      /\/$/,
-      ""
-    )
+    import.meta.env.VITE_API_URL.replace(/\/$/, "")
   ) || "http://localhost:4000";
 
 /* =====================================================
@@ -79,74 +74,46 @@ const SERVICE_BY_ID =
 ===================================================== */
 
 const pad2 = (number) =>
-  String(number).padStart(
-    2,
-    "0"
-  );
+  String(number).padStart(2, "0");
 
 function fmtYMD(date) {
   return (
     `${date.getFullYear()}-` +
-    `${pad2(
-      date.getMonth() + 1
-    )}-` +
-    `${pad2(
-      date.getDate()
-    )}`
+    `${pad2(date.getMonth() + 1)}-` +
+    `${pad2(date.getDate())}`
   );
 }
 
 function todayYMD() {
-  return fmtYMD(
-    new Date()
-  );
+  return fmtYMD(new Date());
 }
 
-function addDays(
-  ymd,
-  amount
-) {
+function addDays(ymd, amount) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setDate(
-    date.getDate() +
-      amount
+    date.getDate() + amount
   );
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function startOfWeekYMD(
-  ymd
-) {
+function startOfWeekYMD(ymd) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setDate(
     date.getDate() -
       date.getDay()
   );
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function weekDays(
-  weekStart
-) {
+function weekDays(weekStart) {
   return Array.from(
-    {
-      length: 7,
-    },
-
+    { length: 7 },
     (_, index) =>
       addDays(
         weekStart,
@@ -155,80 +122,52 @@ function weekDays(
   );
 }
 
-function monthStartYMD(
-  ymd
-) {
+function monthStartYMD(ymd) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setDate(1);
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function endOfMonthYMD(
-  ymd
-) {
+function endOfMonthYMD(ymd) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setMonth(
     date.getMonth() + 1,
     0
   );
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function prevMonth(
-  ymd
-) {
+function prevMonth(ymd) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setMonth(
     date.getMonth() - 1
   );
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function nextMonth(
-  ymd
-) {
+function nextMonth(ymd) {
   const date =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   date.setMonth(
     date.getMonth() + 1
   );
 
-  return fmtYMD(
-    date
-  );
+  return fmtYMD(date);
 }
 
-function monthGrid(
-  ymd
-) {
+function monthGrid(ymd) {
   const start =
-    new Date(
-      `${ymd}T00:00:00`
-    );
+    new Date(`${ymd}T00:00:00`);
 
   const month =
     start.getMonth();
@@ -244,15 +183,10 @@ function monthGrid(
   );
 
   return Array.from(
-    {
-      length: 42,
-    },
-
+    { length: 42 },
     (_, index) => {
       const date =
-        new Date(
-          gridStart
-        );
+        new Date(gridStart);
 
       date.setDate(
         gridStart.getDate() +
@@ -341,7 +275,7 @@ function useAuthFetch() {
 }
 
 /* =====================================================
-   RULE SUMMARY
+   RULE HELPERS
 ===================================================== */
 
 function dayRuleSummary(
@@ -381,7 +315,7 @@ function dayRuleSummary(
 }
 
 /* =====================================================
-   ADMIN COMPONENT
+   ADMIN
 ===================================================== */
 
 export default function Admin() {
@@ -406,6 +340,10 @@ export default function Admin() {
         ),
       [today]
     );
+
+  /* =====================================================
+     CALENDAR STATE
+  ===================================================== */
 
   const [
     selectedDay,
@@ -436,7 +374,7 @@ export default function Admin() {
   ] = useState(false);
 
   /* =====================================================
-     HOURS
+     BOOKING HOURS
   ===================================================== */
 
   const [
@@ -488,14 +426,13 @@ export default function Admin() {
     setHoursMsg,
   ] = useState("");
 
+  /* =====================================================
+     BOOKINGS
+  ===================================================== */
+
   const [
     bookings,
     setBookings,
-  ] = useState([]);
-
-  const [
-    rules,
-    setRules,
   ] = useState([]);
 
   const [
@@ -508,13 +445,57 @@ export default function Admin() {
     setBookingsErr,
   ] = useState("");
 
+  /* =====================================================
+     SPECIAL RULES
+  ===================================================== */
+
+  const [
+    rules,
+    setRules,
+  ] = useState([]);
+
   const [
     rulesErr,
     setRulesErr,
   ] = useState("");
 
+  const [
+    ruleDate,
+    setRuleDate,
+  ] = useState(today);
+
+  const [
+    ruleKind,
+    setRuleKind,
+  ] = useState("closed");
+
+  const [
+    ruleOpen,
+    setRuleOpen,
+  ] = useState("12:00");
+
+  const [
+    ruleClose,
+    setRuleClose,
+  ] = useState("16:00");
+
+  const [
+    ruleBlocks,
+    setRuleBlocks,
+  ] = useState([
+    {
+      start: "13:00",
+      end: "14:00",
+    },
+  ]);
+
+  const [
+    ruleMsg,
+    setRuleMsg,
+  ] = useState("");
+
   /* =====================================================
-     QUICK BOOKING
+     QUICK PHONE BOOKING
   ===================================================== */
 
   const [
@@ -557,51 +538,6 @@ export default function Admin() {
   const [
     qMsg,
     setQMsg,
-  ] = useState("");
-
-  /* =====================================================
-     RULES
-  ===================================================== */
-
-  const [
-    ruleDate,
-    setRuleDate,
-  ] = useState(today);
-
-  const [
-    ruleKind,
-    setRuleKind,
-  ] = useState(
-    "closed"
-  );
-
-  const [
-    ruleOpen,
-    setRuleOpen,
-  ] = useState(
-    "12:00"
-  );
-
-  const [
-    ruleClose,
-    setRuleClose,
-  ] = useState(
-    "16:00"
-  );
-
-  const [
-    ruleBlocks,
-    setRuleBlocks,
-  ] = useState([
-    {
-      start: "13:00",
-      end: "14:00",
-    },
-  ]);
-
-  const [
-    ruleMsg,
-    setRuleMsg,
   ] = useState("");
 
   /* =====================================================
@@ -779,14 +715,15 @@ export default function Admin() {
     }
   }
 
+  /* =====================================================
+     LOAD BOOKINGS
+  ===================================================== */
+
   async function loadMonthBookings(
     anchor
   ) {
     try {
-      setLoadingBookings(
-        true
-      );
-
+      setLoadingBookings(true);
       setBookingsErr("");
 
       const from =
@@ -820,11 +757,13 @@ export default function Admin() {
 
       setBookings([]);
     } finally {
-      setLoadingBookings(
-        false
-      );
+      setLoadingBookings(false);
     }
   }
+
+  /* =====================================================
+     LOAD RULES
+  ===================================================== */
 
   async function loadMonthRules(
     anchor
@@ -865,6 +804,10 @@ export default function Admin() {
     }
   }
 
+  /* =====================================================
+     LOAD AVAILABILITY
+  ===================================================== */
+
   async function loadAvailability() {
     setQSlots([]);
     setQTime("");
@@ -885,7 +828,13 @@ export default function Admin() {
 
       const response =
         await fetch(
-          `${API}/api/availability?date=${qDate}&serviceId=${qServiceId}&bookingType=${bookingType}`
+          `${API}/api/availability?date=${encodeURIComponent(
+            qDate
+          )}&serviceId=${encodeURIComponent(
+            qServiceId
+          )}&bookingType=${encodeURIComponent(
+            bookingType
+          )}`
         );
 
       const data =
@@ -897,9 +846,13 @@ export default function Admin() {
         );
       }
     } catch {
-      // ignore
+      setQSlots([]);
     }
   }
+
+  /* =====================================================
+     LOAD EFFECTS
+  ===================================================== */
 
   useEffect(() => {
     loadHours();
@@ -989,26 +942,32 @@ export default function Admin() {
           qServiceId
         ];
 
+      if (!service) {
+        setQMsg(
+          "Invalid service."
+        );
+
+        return;
+      }
+
       const body = {
         name:
-          qName,
+          qName.trim(),
 
         phone:
-          qPhone,
+          qPhone.trim(),
 
         serviceId:
           qServiceId,
 
         serviceName:
-          service?.name ||
-          "",
+          service.name,
 
         serviceCategory:
-          service?.category ||
-          "",
+          service.category,
 
         bookingType:
-          service?.bookingType ||
+          service.bookingType ||
           "regular",
 
         date:
@@ -1018,9 +977,11 @@ export default function Admin() {
           qTime,
       };
 
-      if (qEmail) {
+      if (
+        qEmail.trim()
+      ) {
         body.email =
-          qEmail;
+          qEmail.trim();
       }
 
       await authFetch(
@@ -1076,8 +1037,7 @@ export default function Admin() {
       await authFetch(
         `/api/admin/bookings/${booking._id}/cancel`,
         {
-          method:
-            "PATCH",
+          method: "PATCH",
         }
       );
 
@@ -1095,7 +1055,7 @@ export default function Admin() {
   }
 
   /* =====================================================
-     SPECIAL RULES
+     ADD SPECIAL RULE
   ===================================================== */
 
   async function addRule() {
@@ -1178,6 +1138,10 @@ export default function Admin() {
     }
   }
 
+  /* =====================================================
+     DELETE SPECIAL RULE
+  ===================================================== */
+
   async function removeRule(
     id
   ) {
@@ -1185,8 +1149,7 @@ export default function Admin() {
       await authFetch(
         `/api/admin/rules/${id}`,
         {
-          method:
-            "DELETE",
+          method: "DELETE",
         }
       );
 
@@ -1195,8 +1158,11 @@ export default function Admin() {
       );
 
       await loadAvailability();
-    } catch {
-      // ignore
+    } catch (error) {
+      window.alert(
+        error.message ||
+          "Failed to delete rule."
+      );
     }
   }
 
@@ -1290,7 +1256,7 @@ export default function Admin() {
                         booking
                       )
                     }
-                    className="mt-3 border border-red-600 text-red-600 px-3 py-2 rounded-lg text-sm"
+                    className="mt-3 border border-red-600 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
                   >
                     Cancel Appointment
                   </button>
@@ -1410,11 +1376,11 @@ export default function Admin() {
                     <td className="py-2 pr-4">
 
                       {cancelled ? (
-                        <span className="text-red-600">
+                        <span className="font-medium text-red-600">
                           Cancelled
                         </span>
                       ) : (
-                        <span className="text-green-700">
+                        <span className="font-medium text-green-700">
                           Confirmed
                         </span>
                       )}
@@ -1431,7 +1397,7 @@ export default function Admin() {
                               booking
                             )
                           }
-                          className="border border-red-600 text-red-600 px-3 py-1.5 rounded-lg"
+                          className="border border-red-600 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50"
                         >
                           Cancel
                         </button>
@@ -1480,10 +1446,13 @@ export default function Admin() {
         ymd
       );
 
-    const isMonday =
+    const dateObj =
       new Date(
         `${ymd}T00:00:00`
-      ).getDay() === 1;
+      );
+
+    const isMonday =
+      dateObj.getDay() === 1;
 
     const regularMondayOpen =
       Boolean(
@@ -1514,6 +1483,7 @@ export default function Admin() {
 
     return (
       <button
+        type="button"
         onClick={() => {
           setSelectedDay(
             ymd
@@ -1523,7 +1493,7 @@ export default function Admin() {
             ymd
           );
         }}
-        className={`shrink-0 px-3 py-2 rounded-lg border text-xs sm:text-sm mr-2 min-w-[70px] ${
+        className={`shrink-0 px-3 py-2 rounded-lg border text-xs sm:text-sm mr-2 min-w-[76px] ${
           selected
             ? "bg-black text-white border-black"
             : "bg-white"
@@ -1532,9 +1502,7 @@ export default function Admin() {
 
         <div className="font-medium">
 
-          {new Date(
-            `${ymd}T00:00:00`
-          ).toLocaleDateString(
+          {dateObj.toLocaleDateString(
             undefined,
             {
               weekday:
@@ -1634,6 +1602,7 @@ export default function Admin() {
 
     return (
       <button
+        type="button"
         onClick={() => {
           setSelectedDay(
             cell.ymd
@@ -1699,6 +1668,140 @@ export default function Admin() {
   }
 
   /* =====================================================
+     BOOKING HOURS CARD
+  ===================================================== */
+
+  function HoursCard({
+    type,
+    dayLabel,
+    dayKey,
+  }) {
+    return (
+      <div className="border rounded-lg p-3">
+
+        <div className="font-medium mb-2">
+          {dayLabel}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+
+          <div>
+
+            <div className="text-xs text-gray-500 mb-1">
+              Open
+            </div>
+
+            <input
+              type="time"
+              value={
+                hours[
+                  type
+                ]?.[
+                  dayKey
+                ]?.open || ""
+              }
+              onChange={(
+                event
+              ) =>
+                setHours(
+                  (
+                    current
+                  ) => ({
+                    ...current,
+
+                    [
+                      type
+                    ]: {
+                      ...current[
+                        type
+                      ],
+
+                      [
+                        dayKey
+                      ]: {
+                        ...(
+                          current[
+                            type
+                          ]?.[
+                            dayKey
+                          ] ||
+                          {}
+                        ),
+
+                        open:
+                          event.target.value,
+                      },
+                    },
+                  })
+                )
+              }
+              className="border rounded-lg p-2 w-full"
+            />
+
+          </div>
+
+          <div>
+
+            <div className="text-xs text-gray-500 mb-1">
+              Close
+            </div>
+
+            <input
+              type="time"
+              value={
+                hours[
+                  type
+                ]?.[
+                  dayKey
+                ]?.close || ""
+              }
+              onChange={(
+                event
+              ) =>
+                setHours(
+                  (
+                    current
+                  ) => ({
+                    ...current,
+
+                    [
+                      type
+                    ]: {
+                      ...current[
+                        type
+                      ],
+
+                      [
+                        dayKey
+                      ]: {
+                        ...(
+                          current[
+                            type
+                          ]?.[
+                            dayKey
+                          ] ||
+                          {}
+                        ),
+
+                        close:
+                          event.target.value,
+                      },
+                    },
+                  })
+                )
+              }
+              className="border rounded-lg p-2 w-full"
+            />
+
+          </div>
+
+        </div>
+
+      </div>
+    );
+  }
+
+  /* =====================================================
      UI
   ===================================================== */
 
@@ -1720,6 +1823,7 @@ export default function Admin() {
             <div className="ml-auto flex gap-2">
 
               <button
+                type="button"
                 onClick={() => {
                   setSelectedDay(
                     today
@@ -1737,13 +1841,16 @@ export default function Admin() {
                     )
                   );
                 }}
-                className="border px-3 py-2 rounded-lg"
+                className="border px-3 py-2 rounded-lg bg-white"
               >
                 Today
               </button>
 
               <button
+                type="button"
                 onClick={() => {
+                  loadHours();
+
                   loadMonthBookings(
                     monthAnchor
                   );
@@ -1754,7 +1861,7 @@ export default function Admin() {
 
                   loadAvailability();
                 }}
-                className="border px-3 py-2 rounded-lg"
+                className="border px-3 py-2 rounded-lg bg-white"
               >
                 Refresh
               </button>
@@ -1786,23 +1893,19 @@ export default function Admin() {
               </h3>
 
               <div className="md:hidden">
-
                 <BookingCards
                   rows={
                     todaysList
                   }
                 />
-
               </div>
 
               <div className="hidden md:block">
-
                 <BookingTable
                   rows={
                     todaysList
                   }
                 />
-
               </div>
 
             </div>
@@ -1814,23 +1917,19 @@ export default function Admin() {
               </h3>
 
               <div className="md:hidden">
-
                 <BookingCards
                   rows={
                     tomorrowsList
                   }
                 />
-
               </div>
 
               <div className="hidden md:block">
-
                 <BookingTable
                   rows={
                     tomorrowsList
                   }
                 />
-
               </div>
 
             </div>
@@ -1850,6 +1949,7 @@ export default function Admin() {
           <div className="flex items-center gap-2 mb-4">
 
             <button
+              type="button"
               onClick={() =>
                 setWeekStart(
                   addDays(
@@ -1864,6 +1964,7 @@ export default function Admin() {
             </button>
 
             <button
+              type="button"
               onClick={() =>
                 setWeekStart(
                   addDays(
@@ -1897,6 +1998,7 @@ export default function Admin() {
           </div>
 
           <button
+            type="button"
             onClick={() =>
               setShowMonth(
                 (current) =>
@@ -1916,6 +2018,7 @@ export default function Admin() {
               <div className="flex items-center mb-3">
 
                 <button
+                  type="button"
                   onClick={() =>
                     setMonthAnchor(
                       prevMonth(
@@ -1933,6 +2036,7 @@ export default function Admin() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={() =>
                     setMonthAnchor(
                       nextMonth(
@@ -1948,19 +2052,19 @@ export default function Admin() {
               </div>
 
               {loadingBookings && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mb-2">
                   Loading...
                 </p>
               )}
 
               {bookingsErr && (
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-red-600 mb-2">
                   {bookingsErr}
                 </p>
               )}
 
               {rulesErr && (
-                <p className="text-sm text-red-600">
+                <p className="text-sm text-red-600 mb-2">
                   {rulesErr}
                 </p>
               )}
@@ -2012,23 +2116,19 @@ export default function Admin() {
           </h3>
 
           <div className="md:hidden">
-
             <BookingCards
               rows={
                 selectedList
               }
             />
-
           </div>
 
           <div className="hidden md:block">
-
             <BookingTable
               rows={
                 selectedList
               }
             />
-
           </div>
 
         </section>
@@ -2043,7 +2143,7 @@ export default function Admin() {
 
           <p className="text-sm text-gray-600 mb-4">
             Use this section to close one specific date,
-            override the normal hours for a date,
+            override the normal salon hours for one date,
             or block part of a day.
           </p>
 
@@ -2095,7 +2195,7 @@ export default function Admin() {
             {ruleKind ===
               "hours" && (
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
 
                 <input
                   type="time"
@@ -2162,9 +2262,7 @@ export default function Admin() {
                         ];
 
                         next[index] = {
-                          ...next[
-                            index
-                          ],
+                          ...next[index],
 
                           start:
                             event.target.value,
@@ -2190,9 +2288,7 @@ export default function Admin() {
                         ];
 
                         next[index] = {
-                          ...next[
-                            index
-                          ],
+                          ...next[index],
 
                           end:
                             event.target.value,
@@ -2273,7 +2369,7 @@ export default function Admin() {
                   key={
                     rule._id
                   }
-                  className="flex justify-between gap-3 border-b py-2"
+                  className="flex items-center justify-between gap-3 border-b py-2"
                 >
 
                   <div>
@@ -2287,6 +2383,7 @@ export default function Admin() {
                     {rule.kind ===
                     "hours" ? (
                       <>
+                        Open{" "}
                         {rule.open}
                         {" - "}
                         {rule.close}
@@ -2334,210 +2431,80 @@ export default function Admin() {
           </h2>
 
           <p className="text-sm text-gray-600 mb-5">
-            Monday hours below apply to the Regular Salon.
-            Leave both Monday fields blank to keep the regular
-            salon closed on Mondays.
+            Monday is controlled here under Regular Salon.
+            Enter opening and closing times to open Mondays.
+            Leave both Monday fields empty to keep Mondays closed.
           </p>
 
-          {[
-            [
-              "Regular Salon",
-              "regular",
-            ],
+          {/* REGULAR SALON */}
 
-            [
-              "Nail Technician",
-              "nails",
-            ],
-          ].map(
-            ([
-              label,
-              type,
-            ]) => {
+          <div className="mb-8">
 
-              const dayOptions =
-                type ===
-                "regular"
-                  ? [
-                      [
-                        "Monday",
-                        "monday",
-                      ],
+            <h3 className="font-semibold mb-3">
+              Regular Salon
+            </h3>
 
-                      [
-                        "Tue–Fri",
-                        "weekday",
-                      ],
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
-                      [
-                        "Saturday",
-                        "saturday",
-                      ],
+              <HoursCard
+                type="regular"
+                dayLabel="Monday"
+                dayKey="monday"
+              />
 
-                      [
-                        "Sunday",
-                        "sunday",
-                      ],
-                    ]
-                  : [
-                      [
-                        "Tue–Fri",
-                        "weekday",
-                      ],
+              <HoursCard
+                type="regular"
+                dayLabel="Tue–Fri"
+                dayKey="weekday"
+              />
 
-                      [
-                        "Saturday",
-                        "saturday",
-                      ],
+              <HoursCard
+                type="regular"
+                dayLabel="Saturday"
+                dayKey="saturday"
+              />
 
-                      [
-                        "Sunday",
-                        "sunday",
-                      ],
-                    ];
+              <HoursCard
+                type="regular"
+                dayLabel="Sunday"
+                dayKey="sunday"
+              />
 
-              return (
-                <div
-                  key={
-                    type
-                  }
-                  className="mb-6"
-                >
+            </div>
 
-                  <h3 className="font-medium mb-3">
-                    {label}
-                  </h3>
+          </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* NAIL TECHNICIAN */}
 
-                    {dayOptions.map(
-                      ([
-                        dayLabel,
-                        key,
-                      ]) => (
+          <div className="mb-6">
 
-                        <div
-                          key={
-                            key
-                          }
-                          className="border rounded-lg p-3"
-                        >
+            <h3 className="font-semibold mb-3">
+              Nail Technician
+            </h3>
 
-                          <div className="font-medium mb-2">
-                            {dayLabel}
-                          </div>
+            <div className="grid gap-3 sm:grid-cols-3">
 
-                          <div className="flex gap-2">
+              <HoursCard
+                type="nails"
+                dayLabel="Tue–Fri"
+                dayKey="weekday"
+              />
 
-                            <input
-                              type="time"
-                              value={
-                                hours[
-                                  type
-                                ]?.[
-                                  key
-                                ]?.open ||
-                                ""
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                setHours(
-                                  (
-                                    current
-                                  ) => ({
-                                    ...current,
+              <HoursCard
+                type="nails"
+                dayLabel="Saturday"
+                dayKey="saturday"
+              />
 
-                                    [
-                                      type
-                                    ]: {
-                                      ...current[
-                                        type
-                                      ],
+              <HoursCard
+                type="nails"
+                dayLabel="Sunday"
+                dayKey="sunday"
+              />
 
-                                      [
-                                        key
-                                      ]: {
-                                        ...(
-                                          current[
-                                            type
-                                          ]?.[
-                                            key
-                                          ] ||
-                                          {}
-                                        ),
+            </div>
 
-                                        open:
-                                          event.target.value,
-                                      },
-                                    },
-                                  })
-                                )
-                              }
-                              className="border rounded-lg p-2 w-full"
-                            />
-
-                            <input
-                              type="time"
-                              value={
-                                hours[
-                                  type
-                                ]?.[
-                                  key
-                                ]?.close ||
-                                ""
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                setHours(
-                                  (
-                                    current
-                                  ) => ({
-                                    ...current,
-
-                                    [
-                                      type
-                                    ]: {
-                                      ...current[
-                                        type
-                                      ],
-
-                                      [
-                                        key
-                                      ]: {
-                                        ...(
-                                          current[
-                                            type
-                                          ]?.[
-                                            key
-                                          ] ||
-                                          {}
-                                        ),
-
-                                        close:
-                                          event.target.value,
-                                      },
-                                    },
-                                  })
-                                )
-                              }
-                              className="border rounded-lg p-2 w-full"
-                            />
-
-                          </div>
-
-                        </div>
-
-                      )
-                    )}
-
-                  </div>
-
-                </div>
-              );
-            }
-          )}
+          </div>
 
           <button
             type="button"
