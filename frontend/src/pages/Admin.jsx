@@ -2329,20 +2329,22 @@ export default function Admin() {
                 <div className="grid gap-3 sm:grid-cols-3">
 
                   {[
-                    [
-                      "Tue–Fri",
-                      "weekday",
-                    ],
-
-                    [
-                      "Saturday",
-                      "saturday",
-                    ],
-
-                    [
-                      "Sunday",
-                      "sunday",
-                    ],
+                   [
+  "Monday",
+  "monday",
+],
+[
+  "Tue–Fri",
+  "weekday",
+],
+[
+  "Saturday",
+  "saturday",
+],
+[
+  "Sunday",
+  "sunday",
+],
                   ].map(
                     ([
                       dayLabel,
